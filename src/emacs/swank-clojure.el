@@ -6,7 +6,7 @@
 ;;          Phil Hagelberg <technomancy@gmail.com>
 ;;
 ;; URL: http://github.com/technomancy/swank-clojure
-;; Version: 1.0
+;; Version: 1.0.1
 ;; Keywords: languages, lisp
 ;; Package-Requires: ((slime-repl "20091016") (clojure-mode "1.6"))
 ;;
