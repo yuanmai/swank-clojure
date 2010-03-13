@@ -9,7 +9,6 @@
     (when-let [ns-found
                (some #(and (ns-resolve (first %) (symbol string)) (first %))
                      package-pages)]
-      (println "ns found " ns-found)
       (list (list ns-found '. (str (package-pages ns-found) ns-found "/" string))))))
 
 (defslimefn hyperdoc [string]
