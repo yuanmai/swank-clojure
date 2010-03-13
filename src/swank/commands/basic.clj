@@ -15,6 +15,7 @@
   `(:pid ~(sys/get-pid)
     :style :spawn
     :lisp-implementation (:type "clojure" :name "clojure")
+    :features (:hyperdoc)
     :package (:name ~(name (ns-name *ns*))
               :prompt ~(name (ns-name *ns*)))
     :version ~(deref *protocol-version*)))
