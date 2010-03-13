@@ -250,7 +250,7 @@ that symbols accessible in the current namespace go first."
                       (pr-str args)
                       `:not-available))
       :else `:not-available))
-   (catch Throwable t nil)))
+   (catch Throwable t `:not-available)))
 
 ;;;; Completions
 
