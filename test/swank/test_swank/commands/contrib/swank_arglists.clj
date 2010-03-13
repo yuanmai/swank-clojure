@@ -1,5 +1,6 @@
-(ns swank.test-swank.commands.contrib.swank-autodoc
-  (:use swank.commands.contrib.swank-autodoc :reload-all)
+(ns swank.test-swank.commands.contrib.swank-arglists
+  (:refer-clojure :exclude [load-file])
+  (:use swank.commands.contrib.swank-arglists :reload-all)
   (:use clojure.test))
 
 (defn emacs-package-fixture [f]
