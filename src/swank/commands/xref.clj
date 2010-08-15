@@ -23,9 +23,41 @@ Example: (get-source-from-var 'filter)"
               (read (PushbackReader. pbr))
               (str text))))))
 
+(defn- contains-sub-nodes? [tree]
+  (or (sequential? tree) (map? tree)))
+
+(defn- expand-sub-nodes [tree]
+  (if (map? tree)
+    (interleave (keys tree) (vals tree))
+    (seq tree)))
+
+(defn- sub-nodes [tree]
+  (tree-seq contains-sub-nodes?
+            expand-sub-nodes tree))
+
+(defn- regex? [obj]
+  (= (class obj) java.util.regex.Pattern))
+
+(defn- replace-with-string [node]
+  (if (regex? node)
+    (.toString node)
+    node))
+
+(defn- replace-regex [coll]
+  "Returns a copy of coll with all regex replaced by the string given by calling toString on them"
+  (postwalk
+   replace-with-string
+   coll))
+
+(defn- maybe-replace-regex [obj]
+  (if (seq? obj)
+    (replace-regex obj)
+    obj))
+
 (defn- recursive-contains? [coll obj]
-  "True if coll contains obj. Obj can't be a seq"
-  (not (empty? (filter #(= obj %) (flatten coll)))))
+  "True if coll contains obj at some level of nesting"
+  (some #{(maybe-replace-regex obj)}
+        (sub-nodes (maybe-replace-regex coll))))
 
 (defn- does-var-call-fn [var fn]
   "Checks if a var calls a function named 'fn"
