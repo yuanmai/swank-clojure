@@ -3,10 +3,14 @@
         (swank.util hooks)
         (swank.util.concurrent thread)
         (swank.core connection hooks threadmap))
-  (:require (swank.util.concurrent [mbox :as mb])))
+  (:require (swank.util.concurrent [mbox :as mb])
+            (com.georgejahad [cdt :as cdt])))
 
+(use 'alex-and-georges.debug-repl)
 ;; Protocol version
 (defonce protocol-version (atom "20100404"))
+
+(def co (atom nil))
 
 ;; Emacs packages
 (def #^{:dynamic true} *current-package*)
@@ -62,7 +66,7 @@
 (def #^{:dynamic true} *current-env* nil)
 
 (let [&env :unavailable]
-  (defmacro local-bindings
+  (defmacro local-bindings2
     "Produces a map of the names of local bindings to their values."
     []
     (if-not (= &env :unavailable)
@@ -120,11 +124,11 @@ values."
 (defn exception-stacktrace [t]
   (map #(list %1 %2 '(:restartable nil))
        (iterate inc 0)
-       (map str (.getStackTrace t))))
+       (map str (cdt/get-frames))))
 
 (defn debugger-condition-for-emacs []
-  (list (or (.getMessage *current-exception*) "No message.")
-        (str "  [Thrown " (class *current-exception*) "]")
+  (list "Testing cdt"
+        "test2"
         nil))
 
 (defn make-restart [kw name description f]
@@ -164,21 +168,14 @@ values."
                   (pos? *sldb-level*)
                   restarts
                   :abort "ABORT" (str "ABORT to SLIME level " (dec *sldb-level*))
-                  (fn [] (throw debug-abort-exception)))
-        restarts (add-restart-if
-                  (and (.getMessage thrown)
-                       (.contains (.getMessage thrown) "BREAK"))
-                  restarts
-                  :continue "CONTINUE" (str "Continue from breakpoint")
-                  (fn [] (throw debug-continue-exception)))
-        restarts (add-cause-restarts restarts thrown)]
+                  (fn [] (throw debug-abort-exception)))]
     (into (array-map) restarts)))
 
 (defn format-restarts-for-emacs []
   (doall (map #(list (first (second %)) (second (second %))) *sldb-restarts*)))
 
 (defn build-backtrace [start end]
-  (doall (take (- end start) (drop start (exception-stacktrace *current-exception*)))))
+  (doall (take (- end start) (drop start (exception-stacktrace (cdt/get-frames))))))
 
 (defn build-debugger-info-for-emacs [start end]
   (list (debugger-condition-for-emacs)
@@ -192,6 +189,8 @@ values."
    continue until a *debug-quit* exception is encountered."
   [level]
   (try
+    (def a     (list* :debug (current-thread) level
+           (build-debugger-info-for-emacs 0 sldb-initial-frames)))
    (send-to-emacs
     (list* :debug (current-thread) level
            (build-debugger-info-for-emacs 0 sldb-initial-frames)))
@@ -223,7 +222,7 @@ values."
 
 (defmacro break
   []
-  `(invoke-debugger (local-bindings) (Exception. "BREAK:") *pending-continuations*))
+  `(invoke-debugger (local-bindings2) (Exception. "BREAK:") *pending-continuations*))
 
 (defn doall-seq [coll]
   (if (seq? coll)
@@ -339,6 +338,7 @@ values."
 (defn dispatch-event
    "Dispatches/executes an event in the control thread's mailbox queue."
    ([ev conn]
+      (reset! co conn)
       (let [[action & args] ev]
         (cond
          (= action :emacs-rex)
