@@ -92,12 +92,14 @@ values."
   (with-emacs-package
    (eval form)))
 
-
+(declare sldb-cdt-debug)
 (defn eval-from-control
   "Blocks for a mbox message from the control thread and executes it
    when received. The mbox message is expected to be a slime-fn."
   ([] (let [form (mb/receive (current-thread))]
-        (apply (ns-resolve *ns* (first form)) (rest form)))))
+        (if (= 'sldb-cdt-debug (first form))
+          (apply sldb-cdt-debug (rest form))        
+          (apply (ns-resolve *ns* (first form)) (rest form))))))
 
 (defn eval-loop
   "A loop which continuosly reads actions from the control thread and
@@ -410,3 +412,7 @@ values."
 
 (defn build-backtrace-core [start end]
   (build-backtrace start end))
+
+(defn sldb-cdt-debug [a b c]
+  (binding [debugger-backend :cdt]
+    (sldb-debug nil nil *pending-continuations*)))

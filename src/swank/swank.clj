@@ -31,7 +31,8 @@
           (try
            (control-loop conn)
            (catch Exception e
-             ;; fail silently
+             (.println System/err "exception in control loop")
+             (.printStackTrace e)
              nil))
           (close-socket! (conn :socket)))
         read

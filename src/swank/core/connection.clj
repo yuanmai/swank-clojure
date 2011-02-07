@@ -47,7 +47,8 @@
         
         :control-thread (ref nil)
         :read-thread (ref nil)
-        :repl-thread (ref nil)})))
+        :repl-thread (ref nil)
+        :cdt-thread (ref nil)})))
 
 (defn read-from-connection
   "Reads a single message from a swank-connection.
