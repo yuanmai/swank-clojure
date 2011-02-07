@@ -524,9 +524,8 @@ that symbols accessible in the current namespace go first."
   (if-let [restart (*sldb-restarts* :abort)]
     (invoke-restart restart)))
 
-
 (defslimefn backtrace [start end]
-  (build-backtrace start end))
+  (build-backtrace-core start end))
 
 (defslimefn buffer-first-change [file-name] nil)
 
@@ -548,7 +547,7 @@ that symbols accessible in the current namespace go first."
   (build-debugger-info-for-emacs start end))
 
 (defslimefn eval-string-in-frame [st n]
-  (eval-string-in-frame-internal st n))
+  (eval-string-in-frame-core st n))
 
 (defslimefn frame-source-location [n]
   (source-location-for-frame

@@ -2,7 +2,8 @@
   (:use (swank util commands)
         (swank.util hooks)
         (swank.util.concurrent thread)
-        (swank.core connection hooks threadmap))
+        (swank.core connection hooks threadmap
+                    debugger-backends))
   (:require (swank.util.concurrent [mbox :as mb])))
 
 ;; Protocol version
@@ -117,17 +118,10 @@ values."
 (defn- debug-abort-exception? [t]
   (some #(identical? debug-abort-exception %) (exception-causes t)))
 
-(def debugger-backend nil)
-(def get-debugger-backend (constantly debugger-backend))
-
-(defmulti exception-stacktrace get-debugger-backend)
-
 (defmethod exception-stacktrace :default [t]
   (map #(list %1 %2 '(:restartable nil))
        (iterate inc 0)
        (map str (.getStackTrace t))))
-
-(defmulti debugger-condition-for-emacs get-debugger-backend)
 
 (defmethod debugger-condition-for-emacs :default []
   (list (or (.getMessage *current-exception*) "No message.")
@@ -164,8 +158,6 @@ values."
        (inc level))
       restarts)))
 
-(defmulti calculate-restarts get-debugger-backend)
-
 (defmethod calculate-restarts :default [thrown]
   (let [restarts [(make-restart :quit "QUIT" "Quit to the SLIME top level"
                                (fn [] (throw debug-quit-exception)))]
@@ -185,8 +177,6 @@ values."
 
 (defn format-restarts-for-emacs []
   (doall (map #(list (first (second %)) (second (second %))) *sldb-restarts*)))
-
-(defmulti build-backtrace get-debugger-backend)
 
 (defmethod build-backtrace :default [start end]
   (doall (take (- end start) (drop start (exception-stacktrace *current-exception*)))))
@@ -398,9 +388,13 @@ values."
        (with-connection conn
          (continuously (dispatch-event (mb/receive (current-thread)) conn))))))
 
-(defmulti eval-string-in-frame-internal get-debugger-backend)
-
 (defmethod eval-string-in-frame-internal :default [expr n]
   (if (and (zero? n) *current-env*)
     (with-bindings *current-env*
       (eval expr))))
+
+(defn eval-string-in-frame-core [expr n]
+  (eval-string-in-frame-internal expr n))
+
+(defn build-backtrace-core [start end]
+  (build-backtrace start end))
