@@ -386,3 +386,7 @@ values."
      (binding [*1 nil, *2 nil, *3 nil, *e nil]
        (with-connection conn
          (continuously (dispatch-event (mb/receive (current-thread)) conn))))))
+
+(defn eval-string-in-frame-internal [string n]
+  (cdt/scf n)
+  (cdt/safe-reval (read-string string) true))

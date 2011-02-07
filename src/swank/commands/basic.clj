@@ -552,6 +552,9 @@ that symbols accessible in the current namespace go first."
     (with-bindings *current-env*
       (eval expr))))
 
+(defslimefn eval-string-in-frame [st n]
+  (eval-string-in-frame-internal st n))
+
 (defslimefn frame-source-location [n]
   (source-location-for-frame
    (nth (.getStackTrace *current-exception*) n)))
