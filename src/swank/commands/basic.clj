@@ -547,11 +547,6 @@ that symbols accessible in the current namespace go first."
 (defslimefn debugger-info-for-emacs [start end]
   (build-debugger-info-for-emacs start end))
 
-(defslimefn eval-string-in-frame [expr n]
-  (if (and (zero? n) *current-env*)
-    (with-bindings *current-env*
-      (eval expr))))
-
 (defslimefn eval-string-in-frame [st n]
   (eval-string-in-frame-internal st n))
 

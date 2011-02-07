@@ -3,14 +3,10 @@
         (swank.util hooks)
         (swank.util.concurrent thread)
         (swank.core connection hooks threadmap))
-  (:require (swank.util.concurrent [mbox :as mb])
-            (com.georgejahad [cdt :as cdt])))
+  (:require (swank.util.concurrent [mbox :as mb])))
 
-(use 'alex-and-georges.debug-repl)
 ;; Protocol version
 (defonce protocol-version (atom "20100404"))
-
-(def co (atom nil))
 
 ;; Emacs packages
 (def #^{:dynamic true} *current-package*)
@@ -66,7 +62,7 @@
 (def #^{:dynamic true} *current-env* nil)
 
 (let [&env :unavailable]
-  (defmacro local-bindings2
+  (defmacro local-bindings
     "Produces a map of the names of local bindings to their values."
     []
     (if-not (= &env :unavailable)
@@ -121,14 +117,21 @@ values."
 (defn- debug-abort-exception? [t]
   (some #(identical? debug-abort-exception %) (exception-causes t)))
 
-(defn exception-stacktrace [t]
+(def debugger-backend nil)
+(def get-debugger-backend (constantly debugger-backend))
+
+(defmulti exception-stacktrace get-debugger-backend)
+
+(defmethod exception-stacktrace :default [t]
   (map #(list %1 %2 '(:restartable nil))
        (iterate inc 0)
-       (map str (cdt/get-frames))))
+       (map str (.getStackTrace t))))
 
-(defn debugger-condition-for-emacs []
-  (list "Testing cdt"
-        "test2"
+(defmulti debugger-condition-for-emacs get-debugger-backend)
+
+(defmethod debugger-condition-for-emacs :default []
+  (list (or (.getMessage *current-exception*) "No message.")
+        (str "  [Thrown " (class *current-exception*) "]")
         nil))
 
 (defn make-restart [kw name description f]
@@ -161,21 +164,32 @@ values."
        (inc level))
       restarts)))
 
-(defn calculate-restarts [thrown]
+(defmulti calculate-restarts get-debugger-backend)
+
+(defmethod calculate-restarts :default [thrown]
   (let [restarts [(make-restart :quit "QUIT" "Quit to the SLIME top level"
                                (fn [] (throw debug-quit-exception)))]
         restarts (add-restart-if
                   (pos? *sldb-level*)
                   restarts
                   :abort "ABORT" (str "ABORT to SLIME level " (dec *sldb-level*))
-                  (fn [] (throw debug-abort-exception)))]
+                  (fn [] (throw debug-abort-exception)))
+        restarts (add-restart-if
+                  (and (.getMessage thrown)
+                       (.contains (.getMessage thrown) "BREAK"))
+                  restarts
+                  :continue "CONTINUE" (str "Continue from breakpoint")
+                  (fn [] (throw debug-continue-exception)))
+        restarts (add-cause-restarts restarts thrown)]
     (into (array-map) restarts)))
 
 (defn format-restarts-for-emacs []
   (doall (map #(list (first (second %)) (second (second %))) *sldb-restarts*)))
 
-(defn build-backtrace [start end]
-  (doall (take (- end start) (drop start (exception-stacktrace (cdt/get-frames))))))
+(defmulti build-backtrace get-debugger-backend)
+
+(defmethod build-backtrace :default [start end]
+  (doall (take (- end start) (drop start (exception-stacktrace *current-exception*)))))
 
 (defn build-debugger-info-for-emacs [start end]
   (list (debugger-condition-for-emacs)
@@ -189,8 +203,6 @@ values."
    continue until a *debug-quit* exception is encountered."
   [level]
   (try
-    (def a     (list* :debug (current-thread) level
-           (build-debugger-info-for-emacs 0 sldb-initial-frames)))
    (send-to-emacs
     (list* :debug (current-thread) level
            (build-debugger-info-for-emacs 0 sldb-initial-frames)))
@@ -222,7 +234,7 @@ values."
 
 (defmacro break
   []
-  `(invoke-debugger (local-bindings2) (Exception. "BREAK:") *pending-continuations*))
+  `(invoke-debugger (local-bindings) (Exception. "BREAK:") *pending-continuations*))
 
 (defn doall-seq [coll]
   (if (seq? coll)
@@ -338,7 +350,6 @@ values."
 (defn dispatch-event
    "Dispatches/executes an event in the control thread's mailbox queue."
    ([ev conn]
-      (reset! co conn)
       (let [[action & args] ev]
         (cond
          (= action :emacs-rex)
@@ -387,6 +398,9 @@ values."
        (with-connection conn
          (continuously (dispatch-event (mb/receive (current-thread)) conn))))))
 
-(defn eval-string-in-frame-internal [string n]
-  (cdt/scf n)
-  (cdt/safe-reval (read-string string) true))
+(defmulti eval-string-in-frame-internal get-debugger-backend)
+
+(defmethod eval-string-in-frame-internal :default [expr n]
+  (if (and (zero? n) *current-env*)
+    (with-bindings *current-env*
+      (eval expr))))
