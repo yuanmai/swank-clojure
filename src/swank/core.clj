@@ -300,26 +300,32 @@ values."
         (finally
          (remove-active-thread (current-thread)))))))
 
-(defn spawn-repl-thread
+(defn spawn-thread
   "Spawn an thread that sets itself as the current
    connection's :repl-thread and then enters an eval-loop"
-  ([conn]
+  ([name conn]
      (dothread-swank
-      (thread-set-name "Swank REPL Thread")
+      (thread-set-name name)
       (with-connection conn
         (eval-loop)))))
 
-(defn find-or-spawn-repl-thread
+(defn find-or-spawn-thread
   "Returns the current connection's repl-thread or create a new one if
    the existing one does not exist."
-  ([conn]
+  ([name key conn]
      ;; TODO - check if an existing repl-agent is still active & doesn't have errors
      (dosync
-      (or (when-let [conn-repl-thread @(conn :repl-thread)]
-            (when (.isAlive #^Thread conn-repl-thread)
-              conn-repl-thread))
-          (ref-set (conn :repl-thread)
-                   (spawn-repl-thread conn))))))
+      (or (when-let [conn-thread @(conn key)]
+            (when (.isAlive #^Thread conn-thread)
+              conn-thread))
+          (ref-set (conn key)
+                   (spawn-thread name conn))))))
+
+(def find-or-spawn-repl-thread
+     (partial find-or-spawn-thread "Swank REPL Thread" :repl-thread))
+
+(def find-or-spawn-cdt-thread
+     (partial find-or-spawn-thread "Swank CDT Thread" :cdt-thread))
 
 (defn thread-for-evaluation
   "Given an id and connection, find or create the appropiate agent."
@@ -327,6 +333,7 @@ values."
      (cond
       (= id true) (spawn-worker-thread conn)
       (= id :repl-thread) (find-or-spawn-repl-thread conn)
+      (= id :cdt-thread) (find-or-spawn-cdt-thread conn)
       :else (find-thread id))))
 
 ;; Handle control
@@ -347,6 +354,11 @@ values."
                thread (thread-for-evaluation thread conn)]
            (mb/send thread `(eval-for-emacs ~form-string ~package ~id)))
 
+         (= action :cdt-rex)
+         (let [[form-string thread] args
+               thread (thread-for-evaluation thread conn)]
+           (mb/send thread (read-string form-string)))
+         
          (= action :return)
          (let [[thread & ret] args]
            (binding [*print-level* nil, *print-length* nil]
