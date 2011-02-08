@@ -1,7 +1,7 @@
 (ns swank.core.debugger-backends)
 
-(def debugger-backend :cdt)
-(def get-debugger-backend (constantly (var-get #'debugger-backend)))
+(def debugger-backend nil)
+(def get-debugger-backend (fn [& args] debugger-backend))
 
 (defmacro def-backend-multimethods [methods]
   `(do
