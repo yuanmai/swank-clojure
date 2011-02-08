@@ -551,7 +551,7 @@ that symbols accessible in the current namespace go first."
 
 (defslimefn frame-source-location [n]
   (source-location-for-frame
-   (nth (.getStackTrace *current-exception*) n)))
+   (nth (get-stack-trace-core) n)))
 
 ;; Older versions of slime use this instead of the above.
 (defslimefn frame-source-location-for-emacs [n]

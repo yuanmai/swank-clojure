@@ -425,6 +425,11 @@ values."
 (defmethod step :default []
            nil)
 
+(defmethod get-stack-trace :default []
+           (.getStackTrace *current-exception*))
+
+(def get-stack-trace-core get-stack-trace)
+
 (defn eval-string-in-frame-core [expr n]
   (eval-string-in-frame-internal expr n))
 

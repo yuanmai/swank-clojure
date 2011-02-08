@@ -10,4 +10,4 @@
 
 (def-backend-multimethods
   [exception-stacktrace debugger-condition-for-emacs calculate-restarts
-   build-backtrace eval-string-in-frame-internal step])
+   build-backtrace eval-string-in-frame-internal step get-stack-trace])

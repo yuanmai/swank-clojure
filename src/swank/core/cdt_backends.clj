@@ -32,11 +32,16 @@
   (cdt/set-handler cdt/breakpoint-handler default-handler)
   (cdt/set-handler cdt/step-handler default-handler))
 
+(defmethod get-stack-trace :cdt []
+           (.getStackTrace (get-thread #_(.getName @control-thread)  (.name (cdt/ct)))))
+
 (defmethod exception-stacktrace :cdt [_]
            (println "gbj6")
            (map #(list %1 %2 '(:restartable nil))
                 (iterate inc 0)
-                (map str (.getStackTrace (get-thread #_(.getName @control-thread)  (.name (cdt/ct)))))))
+                (map str (get-stack-trace))))
+
+
 
 (defmethod debugger-condition-for-emacs :cdt []
            (println "gbj5")
