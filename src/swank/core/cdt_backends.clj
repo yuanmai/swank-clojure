@@ -17,10 +17,13 @@
 
 (def control-thread (atom nil))
 
+(defn set-control-thread []
+  (reset! control-thread
+          (get-thread "Swank Control Thread")))
+
 (defn default-handler [e]
   (when-not @control-thread
-    (reset! control-thread
-            (get-thread "Swank Control Thread")))
+    (set-control-thread))
   (mb/send @control-thread
            '(:cdt-rex "(sldb-cdt-debug)" :cdt-thread)))
 
@@ -33,7 +36,7 @@
            (println "gbj6")
            (map #(list %1 %2 '(:restartable nil))
                 (iterate inc 0)
-                (map str (.getStackTrace (get-thread (.name (cdt/ct)))))))
+                (map str (.getStackTrace (get-thread #_(.getName @control-thread)  (.name (cdt/ct)))))))
 
 (defmethod debugger-condition-for-emacs :cdt []
            (println "gbj5")
@@ -44,6 +47,9 @@
 (defmethod calculate-restarts :cdt [thrown]
   (let [restarts [(core/make-restart :quit "QUIT" "Quit gbj to the SLIME top level"
                                      (fn [] (throw core/debug-quit-exception)))]
+        restarts (conj restarts
+                       (core/make-restart :step "STEP" "Step"
+                                          (fn [] (throw core/debug-step-exception))))
         restarts (core/add-restart-if
                   (pos? core/*sldb-level*)
                   restarts
@@ -57,6 +63,10 @@
 (defmethod eval-string-in-frame-internal :cdt [string n]
   (cdt/scf n)
   (cdt/safe-reval (read-string string) true))
+
+(defmethod step :cdt []
+     (println "gbj11")
+           (cdt/step))
 
 (backend-init)
 

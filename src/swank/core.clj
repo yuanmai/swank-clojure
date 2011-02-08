@@ -56,6 +56,7 @@
 (defonce debug-quit-exception (Exception. "Debug quit"))
 (defonce debug-continue-exception (Exception. "Debug continue"))
 (defonce debug-abort-exception (Exception. "Debug abort"))
+(defonce debug-step-exception (Exception. "Debug step"))
 
 (def #^{:dynamic true} #^Throwable *current-exception* nil)
 
@@ -119,6 +120,9 @@ values."
 
 (defn- debug-abort-exception? [t]
   (some #(identical? debug-abort-exception %) (exception-causes t)))
+
+(defn- debug-step-exception? [t]
+  (some #(identical? debug-step-exception %) (exception-causes t)))
 
 (defmethod exception-stacktrace :default [t]
   (map #(list %1 %2 '(:restartable nil))
@@ -194,6 +198,7 @@ values."
    encountered (an continue to perform the same thing). It will
    continue until a *debug-quit* exception is encountered."
   [level]
+  (println "gbj4")
   (try
    (send-to-emacs
     (list* :debug (current-thread) level
@@ -205,11 +210,15 @@ values."
    (catch Throwable t
      (send-to-emacs
       `(:debug-return ~(current-thread) ~*sldb-level* ~sldb-stepping-p))
+     (println "gbj10")
      (if-not (debug-continue-exception? t)
-       (throw t)))))
+       (if (debug-step-exception? t)
+         (step)
+         (throw t))))))
 
 (defn invoke-debugger
   [locals #^Throwable thrown id]
+  (println "gbj3")
   (binding [*current-env* locals
             *current-exception* thrown
             *sldb-restarts* (calculate-restarts thrown)
@@ -217,6 +226,7 @@ values."
     (sldb-loop *sldb-level*)))
 
 (defn sldb-debug [locals thrown id]
+  (println "gbj2")
   (try
    (invoke-debugger nil thrown id)
    (catch Throwable t
@@ -271,6 +281,11 @@ values."
         (send-to-emacs `(:return ~(thread-name (current-thread)) (:abort) ~id))
         (throw t))
 
+      (debug-step-exception? t)
+      (do
+        (println "gbj20")
+        (throw t))
+      
       :else
       (do
         (set! *e t)
@@ -407,12 +422,16 @@ values."
     (with-bindings *current-env*
       (eval expr))))
 
+(defmethod step :default []
+           nil)
+
 (defn eval-string-in-frame-core [expr n]
   (eval-string-in-frame-internal expr n))
 
 (defn build-backtrace-core [start end]
   (build-backtrace start end))
 
-(defn sldb-cdt-debug [a b c]
+(defn sldb-cdt-debug []
+  (println "gbj1")
   (binding [debugger-backend :cdt]
     (sldb-debug nil nil *pending-continuations*)))
