@@ -1,4 +1,5 @@
 (ns swank.core.cdt-backends
+  (:refer-clojure :exclude [next])
   (:require [com.georgejahad.cdt :as cdt]
             [swank.util.concurrent.mbox :as mb]
             [swank.core :as core])
@@ -33,6 +34,7 @@
   (cdt/set-handler cdt/step-handler default-handler))
 
 (defmethod get-stack-trace :cdt []
+             (println "gbj31")
            (.getStackTrace (get-thread #_(.getName @control-thread)  (.name (cdt/ct)))))
 
 (defmethod exception-stacktrace :cdt [_]
@@ -55,6 +57,9 @@
         restarts (conj restarts
                        (core/make-restart :step "STEP" "Step"
                                           (fn [] (throw core/debug-step-exception))))
+        restarts (conj restarts
+                       (core/make-restart :next "NEXT" "Next"
+                                          (fn [] (throw core/debug-next-exception))))
         restarts (core/add-restart-if
                   (pos? core/*sldb-level*)
                   restarts
@@ -72,6 +77,12 @@
 (defmethod step :cdt []
      (println "gbj11")
            (cdt/step))
+
+(defmethod next :cdt []
+     (cdt/step-over))
+
+(defmethod show-source :cdt []
+           (core/send-to-emacs'(:eval-no-wait "gbj-sldb-show-frame-source" (0))))
 
 (backend-init)
 

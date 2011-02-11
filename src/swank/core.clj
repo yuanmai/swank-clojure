@@ -1,4 +1,5 @@
 (ns swank.core
+  (:refer-clojure :exclude [next])
   (:use (swank util commands)
         (swank.util hooks)
         (swank.util.concurrent thread)
@@ -57,6 +58,7 @@
 (defonce debug-continue-exception (Exception. "Debug continue"))
 (defonce debug-abort-exception (Exception. "Debug abort"))
 (defonce debug-step-exception (Exception. "Debug step"))
+(defonce debug-next-exception (Exception. "Debug next"))
 
 (def #^{:dynamic true} #^Throwable *current-exception* nil)
 
@@ -123,6 +125,9 @@ values."
 
 (defn- debug-step-exception? [t]
   (some #(identical? debug-step-exception %) (exception-causes t)))
+
+(defn- debug-next-exception? [t]
+  (some #(identical? debug-next-exception %) (exception-causes t)))
 
 (defmethod exception-stacktrace :default [t]
   (map #(list %1 %2 '(:restartable nil))
@@ -203,10 +208,12 @@ values."
    (send-to-emacs
     (list* :debug (current-thread) level
            (build-debugger-info-for-emacs 0 sldb-initial-frames)))
+   (send-to-emacs `(:debug-activate ~(current-thread) ~level nil))
+   (show-source)
    ([] (continuously
         (do
-          (send-to-emacs `(:debug-activate ~(current-thread) ~level nil))
-          (eval-from-control))))
+          (eval-from-control)
+          (send-to-emacs `(:debug-activate ~(current-thread) ~level nil)))))
    (catch Throwable t
      (send-to-emacs
       `(:debug-return ~(current-thread) ~*sldb-level* ~sldb-stepping-p))
@@ -214,7 +221,9 @@ values."
      (if-not (debug-continue-exception? t)
        (if (debug-step-exception? t)
          (step)
-         (throw t))))))
+         (if  (debug-next-exception? t)
+           (next)
+           (throw t)))))))
 
 (defn invoke-debugger
   [locals #^Throwable thrown id]
@@ -285,7 +294,8 @@ values."
       (do
         (println "gbj20")
         (throw t))
-      
+      (debug-next-exception? t)
+      (throw t)
       :else
       (do
         (set! *e t)
@@ -385,7 +395,8 @@ values."
                   :presentation-start :presentation-end
                   :new-package :new-features :ed :percent-apply
                   :indentation-update
-                  :eval-no-wait :background-message :inspect)
+                  :eval-no-wait :background-message :inspect
+                  :show-frame-source)
          (binding [*print-level* nil, *print-length* nil]
            (write-to-connection conn ev))
 
@@ -423,6 +434,12 @@ values."
       (eval expr))))
 
 (defmethod step :default []
+           nil)
+
+(defmethod next :default []
+           nil)
+
+(defmethod show-source :default []
            nil)
 
 (defmethod get-stack-trace :default []
