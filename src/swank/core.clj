@@ -5,7 +5,8 @@
         (swank.util.concurrent thread)
         (swank.core connection hooks threadmap
                     debugger-backends))
-  (:require (swank.util.concurrent [mbox :as mb])))
+  (:require (swank.util.concurrent [mbox :as mb])
+            [com.georgejahad [cdt :as cdt]]))
 
 ;; Protocol version
 (defonce protocol-version (atom "20100404"))
@@ -59,6 +60,8 @@
 (defonce debug-abort-exception (Exception. "Debug abort"))
 (defonce debug-step-exception (Exception. "Debug step"))
 (defonce debug-next-exception (Exception. "Debug next"))
+(defonce debug-finish-exception (Exception. "Debug finish"))
+(defonce debug-cdt-continue-exception (Exception. "Debug cdt continue"))
 
 (def #^{:dynamic true} #^Throwable *current-exception* nil)
 
@@ -100,8 +103,8 @@ values."
   "Blocks for a mbox message from the control thread and executes it
    when received. The mbox message is expected to be a slime-fn."
   ([] (let [form (mb/receive (current-thread))]
-        (if (= 'sldb-cdt-debug (first form))
-          (apply sldb-cdt-debug (rest form))        
+        (if (= 'eval (first form))
+          (apply eval (rest form))
           (apply (ns-resolve *ns* (first form)) (rest form))))))
 
 (defn eval-loop
@@ -128,6 +131,30 @@ values."
 
 (defn- debug-next-exception? [t]
   (some #(identical? debug-next-exception %) (exception-causes t)))
+
+(defn- debug-finish-exception? [t]
+  (some #(identical? debug-finish-exception %) (exception-causes t)))
+
+(defn- debug-cdt-continue-exception? [t]
+  (some #(identical? debug-cdt-continue-exception %) (exception-causes t)))
+
+(defn- debug-cdt-exception? [t]
+  (or (debug-cdt-continue-exception? t) (debug-finish-exception? t)
+      (debug-next-exception? t) (debug-step-exception? t)))
+
+(defn- debug-handle-exception? [t]
+  (println "gbjt" t)
+  (cond
+   (debug-continue-exception? t)
+   true
+   (debug-step-exception? t)
+   (step)
+   (debug-next-exception? t)
+   (next)
+   (debug-cdt-continue-exception? t)
+   (continue)
+   (debug-finish-exception? t)
+   (finish)))
 
 (defmethod exception-stacktrace :default [t]
   (map #(list %1 %2 '(:restartable nil))
@@ -218,12 +245,8 @@ values."
      (send-to-emacs
       `(:debug-return ~(current-thread) ~*sldb-level* ~sldb-stepping-p))
      (println "gbj10")
-     (if-not (debug-continue-exception? t)
-       (if (debug-step-exception? t)
-         (step)
-         (if  (debug-next-exception? t)
-           (next)
-           (throw t)))))))
+     (if-not (debug-handle-exception? t)
+       (throw t)))))
 
 (defn invoke-debugger
   [locals #^Throwable thrown id]
@@ -290,11 +313,7 @@ values."
         (send-to-emacs `(:return ~(thread-name (current-thread)) (:abort) ~id))
         (throw t))
 
-      (debug-step-exception? t)
-      (do
-        (println "gbj20")
-        (throw t))
-      (debug-next-exception? t)
+      (debug-cdt-exception? t)
       (throw t)
       :else
       (do
@@ -434,11 +453,16 @@ values."
       (eval expr))))
 
 (defmethod step :default []
-           nil)
+           true)
 
 (defmethod next :default []
-           nil)
+           true)
 
+(defmethod continue :default []
+           true)
+
+(defmethod finish :default []
+           true)
 (defmethod show-source :default []
            nil)
 

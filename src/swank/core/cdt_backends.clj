@@ -26,12 +26,16 @@
   (when-not @control-thread
     (set-control-thread))
   (mb/send @control-thread
-           '(:cdt-rex "(sldb-cdt-debug)" :cdt-thread)))
+           '(:cdt-rex "(eval (swank.core/sldb-cdt-debug))" :cdt-thread)))
+
+(defn display-background-msg [s]
+  (core/send-to-emacs (list :background-message s)))
 
 (defn backend-init []
   (cdt/set-handler cdt/exception-handler default-handler)
   (cdt/set-handler cdt/breakpoint-handler default-handler)
-  (cdt/set-handler cdt/step-handler default-handler))
+  (cdt/set-handler cdt/step-handler default-handler)
+  (reset! cdt/CDT-DISPLAY-MSG display-background-msg))
 
 (defmethod get-stack-trace :cdt []
              (println "gbj31")
@@ -60,6 +64,12 @@
         restarts (conj restarts
                        (core/make-restart :next "NEXT" "Next"
                                           (fn [] (throw core/debug-next-exception))))
+        restarts (conj restarts
+                       (core/make-restart :cont "CONT" "cont"
+                                          (fn [] (throw core/debug-cdt-continue-exception))))
+        restarts (conj restarts
+                       (core/make-restart :finish "FINISH" "finish"
+                                          (fn [] (throw core/debug-finish-exception))))
         restarts (core/add-restart-if
                   (pos? core/*sldb-level*)
                   restarts
@@ -74,15 +84,19 @@
   (cdt/scf n)
   (cdt/safe-reval (read-string string) true))
 
-(defmethod step :cdt []
-     (println "gbj11")
-           (cdt/step))
+(defmacro make-cdt-method [name func]
+  `(defmethod ~name :cdt []
+              (println "gbj " '~func)
+              (~(ns-resolve (the-ns 'com.georgejahad.cdt) func))
+              true))
 
-(defmethod next :cdt []
-     (cdt/step-over))
+(make-cdt-method step step)
+(make-cdt-method next step-over)
+(make-cdt-method finish finish)
+(make-cdt-method continue cont)
 
 (defmethod show-source :cdt []
-           (core/send-to-emacs'(:eval-no-wait "gbj-sldb-show-frame-source" (0))))
+           (core/send-to-emacs '(:eval-no-wait "gbj-sldb-show-frame-source" (0))))
 
 (backend-init)
 
