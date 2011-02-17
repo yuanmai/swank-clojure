@@ -29,7 +29,7 @@
            '(:cdt-rex "(eval (swank.core/sldb-cdt-debug))" :cdt-thread)))
 
 (defn display-background-msg [s]
-  (core/send-to-emacs (list :background-message s)))
+  (mb/send @control-thread (list :eval-no-wait "slime-message" (list "%s" s))))
 
 (defn backend-init []
   (cdt/set-handler cdt/exception-handler default-handler)
