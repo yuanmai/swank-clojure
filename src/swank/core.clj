@@ -377,7 +377,10 @@ values."
   "Given an id and connection, find or create the appropiate agent."
   ([id conn]
      (cond
-      (= id true) (spawn-worker-thread conn)
+      (= id true)
+      (if (cdt/ct)
+        (find-or-spawn-cdt-thread conn)
+        (spawn-worker-thread conn))
       (= id :repl-thread) (find-or-spawn-repl-thread conn)
       (= id :cdt-thread) (find-or-spawn-cdt-thread conn)
       :else (find-thread id))))
@@ -466,8 +469,13 @@ values."
 (defmethod show-source :default []
            nil)
 
-(defmethod get-stack-trace :default []
-           (.getStackTrace *current-exception*))
+(defmethod swank-eval :default [form]
+           (eval (with-env-locals form)))
+
+(def swank-eval-core swank-eval)
+
+(defmethod get-stack-trace :default [n]
+           (nth (.getStackTrace *current-exception*) n))
 
 (def get-stack-trace-core get-stack-trace)
 

@@ -35,19 +35,26 @@
   (cdt/set-handler cdt/exception-handler default-handler)
   (cdt/set-handler cdt/breakpoint-handler default-handler)
   (cdt/set-handler cdt/step-handler default-handler)
-  (reset! cdt/CDT-DISPLAY-MSG display-background-msg))
+  (reset! cdt/CDT-DISPLAY-MSG display-background-msg)
+  (set-control-thread))
 
-(defmethod get-stack-trace :cdt []
-             (println "gbj31")
-           (.getStackTrace (get-thread #_(.getName @control-thread)  (.name (cdt/ct)))))
+(defmethod swank-eval :cdt [form]
+           (cdt/safe-reval form true))
+
+(defn get-full-stack-trace []
+   (.getStackTrace (get-thread #_(.getName @control-thread)
+                               (.name (cdt/ct)))))
+
+(defmethod get-stack-trace :cdt [n]
+           (println "gbj31" (type n) n)
+           (cdt/scf n)
+           (nth (get-full-stack-trace) n))
 
 (defmethod exception-stacktrace :cdt [_]
            (println "gbj6")
            (map #(list %1 %2 '(:restartable nil))
                 (iterate inc 0)
-                (map str (get-stack-trace))))
-
-
+                (map str (get-full-stack-trace))))
 
 (defmethod debugger-condition-for-emacs :cdt []
            (println "gbj5")
@@ -87,6 +94,7 @@
 (defmacro make-cdt-method [name func]
   `(defmethod ~name :cdt []
               (println "gbj " '~func)
+              (cdt/clear-current-thread)
               (~(ns-resolve (the-ns 'com.georgejahad.cdt) func))
               true))
 

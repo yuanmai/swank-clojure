@@ -44,7 +44,7 @@
            (if (= form rdr)
              [value last-form]
              (recur (read rdr false rdr)
-                    (eval (with-env-locals form))
+                    (swank-eval-core form)
                     form)))))))
 
 (defn- compile-region
@@ -551,12 +551,12 @@ that symbols accessible in the current namespace go first."
 
 (defslimefn frame-source-location [n]
   (source-location-for-frame
-   (nth (get-stack-trace-core) n)))
+   (get-stack-trace-core n)))
 
 ;; Older versions of slime use this instead of the above.
 (defslimefn frame-source-location-for-emacs [n]
   (source-location-for-frame
-   (nth (.getStackTrace *current-exception*) n)))
+      (get-stack-trace-core n)))
 
 (defslimefn create-repl [target] '("user" "user"))
 
