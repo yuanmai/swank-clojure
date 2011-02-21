@@ -166,8 +166,11 @@ values."
         (str "  [Thrown " (class *current-exception*) "]")
         nil))
 
-(defn make-restart [kw name description f]
-  [kw [name description f]])
+(defn make-restart
+  ([kw name description f]
+     (make-restart kw name description f true))
+  ([kw name description f visible?]
+   [kw [name description f visible?]]))
 
 (defn add-restart-if [condition restarts kw name description f]
   (if condition
@@ -214,7 +217,7 @@ values."
     (into (array-map) restarts)))
 
 (defn format-restarts-for-emacs []
-  (doall (map #(list (first (second %)) (second (second %))) *sldb-restarts*)))
+  (doall (map #(list (first (second %)) (second (second %))) (filter #(last (second %)) *sldb-restarts*))))
 
 (defmethod build-backtrace :default [start end]
   (doall (take (- end start) (drop start (exception-stacktrace *current-exception*)))))
@@ -262,9 +265,10 @@ values."
   (try
    (invoke-debugger nil thrown id)
    (catch Throwable t
-     (when (and (pos? *sldb-level*)
+     (if (and (pos? *sldb-level*)
                 (not (debug-abort-exception? t)))
-       (throw t)))))
+       (throw t)
+       (println "got exception" t)))))
 
 (defmacro break
   []

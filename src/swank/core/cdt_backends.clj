@@ -67,16 +67,16 @@
                                      (fn [] (throw core/debug-quit-exception)))]
         restarts (conj restarts
                        (core/make-restart :step "STEP" "Step"
-                                          (fn [] (throw core/debug-step-exception))))
+                                          (fn [] (throw core/debug-step-exception)) false))
         restarts (conj restarts
                        (core/make-restart :next "NEXT" "Next"
-                                          (fn [] (throw core/debug-next-exception))))
+                                          (fn [] (throw core/debug-next-exception)) false))
         restarts (conj restarts
                        (core/make-restart :cont "CONT" "cont"
-                                          (fn [] (throw core/debug-cdt-continue-exception))))
+                                          (fn [] (throw core/debug-cdt-continue-exception)) false))
         restarts (conj restarts
                        (core/make-restart :finish "FINISH" "finish"
-                                          (fn [] (throw core/debug-finish-exception))))
+                                          (fn [] (throw core/debug-finish-exception)) false))
         restarts (core/add-restart-if
                   (pos? core/*sldb-level*)
                   restarts
@@ -94,8 +94,8 @@
 (defmacro make-cdt-method [name func]
   `(defmethod ~name :cdt []
               (println "gbj " '~func)
-              (cdt/clear-current-thread)
               (~(ns-resolve (the-ns 'com.georgejahad.cdt) func))
+              (cdt/clear-current-thread)
               true))
 
 (make-cdt-method step step)
