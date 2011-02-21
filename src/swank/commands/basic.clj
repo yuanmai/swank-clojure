@@ -520,6 +520,18 @@ that symbols accessible in the current namespace go first."
   (if-let [restart (*sldb-restarts* :continue)]
     (invoke-restart restart)))
 
+(defslimefn sldb-step [_]
+  (if-let [restart (*sldb-restarts* :step)]
+    (invoke-restart restart)))
+
+(defslimefn sldb-next [_]
+  (if-let [restart (*sldb-restarts* :next)]
+    (invoke-restart restart)))
+
+(defslimefn sldb-out [_]
+  (if-let [restart (*sldb-restarts* :finish)]
+    (invoke-restart restart)))
+
 (defslimefn sldb-abort []
   (if-let [restart (*sldb-restarts* :abort)]
     (invoke-restart restart)))
