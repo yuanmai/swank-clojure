@@ -163,11 +163,8 @@ values."
         (str "  [Thrown " (class *current-exception*) "]")
         nil))
 
-(defn make-restart
-  ([kw name description f]
-     (make-restart kw name description f true))
-  ([kw name description f visible?]
-   [kw [name description f visible?]]))
+(defn make-restart [kw name description f]
+  [kw [name description f]])
 
 (defn add-restart-if [condition restarts kw name description f]
   (if condition
@@ -214,7 +211,7 @@ values."
     (into (array-map) restarts)))
 
 (defn format-restarts-for-emacs []
-  (doall (map #(list (first (second %)) (second (second %))) (filter #(last (second %)) *sldb-restarts*))))
+  (doall (map #(list (first (second %)) (second (second %))) *sldb-restarts*)))
 
 (defmethod build-backtrace :default [start end]
   (doall (take (- end start) (drop start (exception-stacktrace *current-exception*)))))

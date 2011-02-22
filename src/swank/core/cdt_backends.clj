@@ -63,21 +63,8 @@
                  nil))
 
 (defmethod calculate-restarts :cdt [thrown]
-  (let [restarts [(core/make-restart :quit "QUIT" "Quit gbj to the SLIME top level"
-                                     (fn [] (throw core/debug-quit-exception)))]
-        restarts (conj restarts
-                       (core/make-restart :step "STEP" "Step"
-                                          (fn [] (println "gbjstep2")
-                                            (throw core/debug-step-exception)) false))
-        restarts (conj restarts
-                       (core/make-restart :next "NEXT" "Next"
-                                          (fn [] (throw core/debug-next-exception)) false))
-        restarts (conj restarts
-                       (core/make-restart :cont "CONT" "cont"
-                                          (fn [] (throw core/debug-cdt-continue-exception)) false))
-        restarts (conj restarts
-                       (core/make-restart :finish "FINISH" "finish"
-                                          (fn [] (throw core/debug-finish-exception)) false))
+  (let [restarts [(core/make-restart :quit "QUIT" "Quit to the SLIME top level"
+                                     (fn [] (throw core/debug-cdt-continue-exception)))]
         restarts (core/add-restart-if
                   (pos? core/*sldb-level*)
                   restarts

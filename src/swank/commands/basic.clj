@@ -5,7 +5,8 @@
         (swank.util string clojure)
         (swank.clj-contrib pprint macroexpand))
   (:require (swank.util [sys :as sys])
-            (swank.commands [xref :as xref]))
+            (swank.commands [xref :as xref])
+            [com.georgejahad [cdt :as cdt]])
   (:import (java.io StringReader File)
            (java.util.zip ZipFile)
            (clojure.lang LineNumberingPushbackReader)))
@@ -521,16 +522,13 @@ that symbols accessible in the current namespace go first."
     (invoke-restart restart)))
 
 (defslimefn sldb-step [_]
-  (if-let [restart (*sldb-restarts* :step)]
-    (invoke-restart restart)))
+  (throw debug-step-exception))
 
 (defslimefn sldb-next [_]
-  (if-let [restart (*sldb-restarts* :next)]
-    (invoke-restart restart)))
+  (throw debug-next-exception))
 
 (defslimefn sldb-out [_]
-  (if-let [restart (*sldb-restarts* :finish)]
-    (invoke-restart restart)))
+  (throw debug-finish-exception))
 
 (defslimefn sldb-abort []
   (if-let [restart (*sldb-restarts* :abort)]
@@ -612,4 +610,11 @@ corresponding attribute values per thread."
 
 (defslimefn sldb-cdt-debug []
   (println "gbj1")
-  (sldb-debug nil nil *pending-continuations*))
+  (try
+    (sldb-debug nil nil *pending-continuations*)
+    (finally (cdt/clear-current-thread))))
+
+
+(defslimefn sldb-line-bp [file line]
+  (println "gbjlb")
+  (cdt/line-bp file line))
