@@ -235,12 +235,11 @@ values."
    (send-to-emacs
     (list* :debug (current-thread) level
            (build-debugger-info-for-emacs 0 sldb-initial-frames)))
-   (send-to-emacs `(:debug-activate ~(current-thread) ~level nil))
    (show-source)
    ([] (continuously
         (do
-          (eval-from-control)
-          (send-to-emacs `(:debug-activate ~(current-thread) ~level nil)))))
+          (send-to-emacs `(:debug-activate ~(current-thread) ~level nil))
+          (eval-from-control))))
    (catch Throwable t
      (send-to-emacs
       `(:debug-return ~(current-thread) ~*sldb-level* ~sldb-stepping-p))
