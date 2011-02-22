@@ -347,32 +347,26 @@ values."
         (finally
          (remove-active-thread (current-thread)))))))
 
-(defn spawn-thread
+(defn spawn-repl-thread
   "Spawn an thread that sets itself as the current
    connection's :repl-thread and then enters an eval-loop"
-  ([name conn]
+  ([conn]
      (dothread-swank
-      (thread-set-name name)
+      (thread-set-name "Swank REPL Thread")
       (with-connection conn
         (eval-loop)))))
 
-(defn find-or-spawn-thread
+(defn find-or-spawn-repl-thread
   "Returns the current connection's repl-thread or create a new one if
    the existing one does not exist."
-  ([name key conn]
+  ([conn]
      ;; TODO - check if an existing repl-agent is still active & doesn't have errors
      (dosync
-      (or (when-let [conn-thread @(conn key)]
-            (when (.isAlive #^Thread conn-thread)
-              conn-thread))
-          (ref-set (conn key)
-                   (spawn-thread name conn))))))
-
-(def find-or-spawn-repl-thread
-     (partial find-or-spawn-thread "Swank REPL Thread" :repl-thread))
-
-(def find-or-spawn-cdt-thread
-     (partial find-or-spawn-thread "Swank CDT Thread" :cdt-thread))
+      (or (when-let [conn-repl-thread @(conn :repl-thread)]
+            (when (.isAlive #^Thread conn-repl-thread)
+              conn-repl-thread))
+          (ref-set (conn :repl-thread)
+                   (spawn-repl-thread conn))))))
 
 (defn thread-for-evaluation
   "Given an id and connection, find or create the appropiate agent."
