@@ -1,8 +1,10 @@
 (ns swank.core.debugger-backends
-  (:refer-clojure :exclude [next]))
+  (:refer-clojure :exclude [next])
+  (:require [com.georgejahad.cdt :as cdt]))
 
-(def debugger-backend nil)
-(def get-debugger-backend (fn [& args] debugger-backend))
+
+(defn get-debugger-backend [& args]
+  (when (cdt/ct) :cdt))
 
 (defmacro def-backend-multimethods [methods]
   `(do

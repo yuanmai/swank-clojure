@@ -608,3 +608,8 @@ corresponding attribute values per thread."
 
 (defslimefn quit-thread-browser []
   (reset! thread-list []))
+
+
+(defslimefn sldb-cdt-debug []
+  (println "gbj1")
+  (sldb-debug nil nil *pending-continuations*))

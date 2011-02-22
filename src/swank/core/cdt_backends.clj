@@ -26,7 +26,7 @@
   (when-not @control-thread
     (set-control-thread))
   (mb/send @control-thread
-           '(:cdt-rex "(eval (swank.core/sldb-cdt-debug))" :cdt-thread)))
+           '(:cdt-rex "(swank.commands.basic/sldb-cdt-debug)" true)))
 
 (defn display-background-msg [s]
   (mb/send @control-thread (list :eval-no-wait "slime-message" (list "%s" s))))
@@ -67,7 +67,8 @@
                                      (fn [] (throw core/debug-quit-exception)))]
         restarts (conj restarts
                        (core/make-restart :step "STEP" "Step"
-                                          (fn [] (throw core/debug-step-exception)) false))
+                                          (fn [] (println "gbjstep2")
+                                            (throw core/debug-step-exception)) false))
         restarts (conj restarts
                        (core/make-restart :next "NEXT" "Next"
                                           (fn [] (throw core/debug-next-exception)) false))
@@ -104,7 +105,7 @@
 (make-cdt-method continue cont)
 
 (defmethod show-source :cdt []
-           (core/send-to-emacs '(:eval-no-wait "gbj-sldb-show-frame-source" (0))))
+           (core/send-to-emacs '(:eval-no-wait "sldb-show-frame-source" (0))))
 
 (backend-init)
 

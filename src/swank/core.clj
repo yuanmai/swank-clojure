@@ -98,14 +98,11 @@ values."
   (with-emacs-package
    (eval form)))
 
-(declare sldb-cdt-debug)
 (defn eval-from-control
   "Blocks for a mbox message from the control thread and executes it
    when received. The mbox message is expected to be a slime-fn."
   ([] (let [form (mb/receive (current-thread))]
-        (if (= 'eval (first form))
-          (apply eval (rest form))
-          (apply (ns-resolve *ns* (first form)) (rest form))))))
+        (apply (ns-resolve *ns* (first form)) (rest form)))))
 
 (defn eval-loop
   "A loop which continuosly reads actions from the control thread and
@@ -381,12 +378,8 @@ values."
   "Given an id and connection, find or create the appropiate agent."
   ([id conn]
      (cond
-      (= id true)
-      (if (cdt/ct)
-        (find-or-spawn-cdt-thread conn)
-        (spawn-worker-thread conn))
+      (= id true) (spawn-worker-thread conn)
       (= id :repl-thread) (find-or-spawn-repl-thread conn)
-      (= id :cdt-thread) (find-or-spawn-cdt-thread conn)
       :else (find-thread id))))
 
 ;; Handle control
@@ -488,8 +481,3 @@ values."
 
 (defn build-backtrace-core [start end]
   (build-backtrace start end))
-
-(defn sldb-cdt-debug []
-  (println "gbj1")
-  (binding [debugger-backend :cdt]
-    (sldb-debug nil nil *pending-continuations*)))
