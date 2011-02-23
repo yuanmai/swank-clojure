@@ -55,6 +55,7 @@
    PORT-FILE. This is the entry point for Emacs."
   [port-file & opts]
   (let [opts (apply hash-map opts)]
+    (.start (Thread. #(require 'swank.core.cdt-backends)))
     (setup-server (get opts :port 0)
                   (fn announce-port [port]
                     (announce-port-to-file port-file port)

@@ -32,6 +32,7 @@
   (mb/send @control-thread (list :eval-no-wait "slime-message" (list "%s" s))))
 
 (defn backend-init []
+  (cdt/cdt-attach-pid)
   (cdt/set-handler cdt/exception-handler default-handler)
   (cdt/set-handler cdt/breakpoint-handler default-handler)
   (cdt/set-handler cdt/step-handler default-handler)
@@ -83,7 +84,6 @@
   `(defmethod ~name :cdt []
               (println "gbj " '~func)
               (~(ns-resolve (the-ns 'com.georgejahad.cdt) func))
-              (cdt/clear-current-thread)
               true))
 
 (make-cdt-method step step)
