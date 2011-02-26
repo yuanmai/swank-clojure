@@ -608,10 +608,10 @@ corresponding attribute values per thread."
   (reset! thread-list []))
 
 
-(defslimefn sldb-cdt-debug []
+(defslimefn sldb-cdt-debug [event-vec]
   (println "gbj1")
   (try
-    (sldb-debug nil nil *pending-continuations*)
+    (sldb-debug nil event-vec *pending-continuations*)
     (finally (cdt/clear-current-thread))))
 
 
