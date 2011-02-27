@@ -34,6 +34,9 @@
 (defn default-handler [e]
   (when-not @control-thread
     (set-control-thread))
+  ;; gbj: get rid of this once i switch to cdt-env
+  (cdt/set-current-thread (cdt/get-thread e))
+
   (prn "gbj43" `(:cdt-rex ~(pr-str `(swank.commands.basic/sldb-cdt-debug ~(event-data e)))  true))
   (mb/send @control-thread
            `(:cdt-rex ~(pr-str `(swank.commands.basic/sldb-cdt-debug ~(event-data e))) true)))
@@ -69,18 +72,18 @@
 
 (defmethod debugger-condition-for-emacs :cdt []
            (println "gbj5")
-           core/*current-exception*)
+           core/*cdt-env*)
 
-(defn exception? [thrown-message]
-  (.startsWith (first thrown-message) "CDT Exception"))
+(defn exception? []
+  (.startsWith (first core/*cdt-env*) "CDT Exception"))
 
-(defn get-quit-exception [thrown-message]
-  (if (exception? thrown-message)
+(defn get-quit-exception []
+  (if (exception?)
     core/debug-abort-exception
     core/debug-cdt-continue-exception))
 
-(defmethod calculate-restarts :cdt [thrown-message]
-           (let [quit-exception (get-quit-exception thrown-message)
+(defmethod calculate-restarts :cdt [_]
+           (let [quit-exception (get-quit-exception)
                  restarts [(core/make-restart :quit "QUIT" "Quit to the SLIME top level"
                                      (fn [] (throw quit-exception)))]
         restarts (core/add-restart-if

@@ -68,6 +68,9 @@
 ;; Local environment
 (def #^{:dynamic true} *current-env* nil)
 
+;; Local environment
+(def #^{:dynamic true} *cdt-env* nil)
+
 (let [&env :unavailable]
   (defmacro local-bindings
     "Produces a map of the names of local bindings to their values."
@@ -246,7 +249,7 @@ values."
 
 (defn invoke-debugger
   [locals #^Throwable thrown id]
-  (println "gbj3")
+  (println "gbj3" (cdt/ct))
   (binding [*current-env* locals
             *current-exception* thrown
             *sldb-restarts* (calculate-restarts thrown)
@@ -261,7 +264,7 @@ values."
      (if (and (pos? *sldb-level*)
                 (not (debug-abort-exception? t)))
        (throw t)
-       (println "got exception" t)))))
+       (.printStackTrace t)))))
 
 (defmacro break
   []
