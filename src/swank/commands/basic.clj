@@ -450,7 +450,9 @@ that symbols accessible in the current namespace go first."
                        (str ns-path File/separator (.getFileName frame))
                        (.getFileName frame))))
         path     (slime-find-file filename)]
-    (location-in-file path line)))
+    (if path
+      (location-in-file path line)
+      (list :error (format "%s - source not found." filename)))))
 
 (defn- namespace-to-filename [ns]
   (str (-> (str ns)
