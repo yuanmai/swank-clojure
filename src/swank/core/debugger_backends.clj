@@ -2,9 +2,10 @@
   (:refer-clojure :exclude [next])
   (:require [com.georgejahad.cdt :as cdt]))
 
+(def #^{:dynamic true} *debugger-env* nil)
 
 (defn get-debugger-backend [& args]
-  (when (cdt/ct) :cdt))
+  (when *debugger-env* :cdt))
 
 (defmacro def-backend-multimethods [methods]
   `(do

@@ -6,7 +6,8 @@
         (swank.clj-contrib pprint macroexpand))
   (:require (swank.util [sys :as sys])
             (swank.commands [xref :as xref])
-            [com.georgejahad [cdt :as cdt]])
+            [com.georgejahad [cdt :as cdt]]
+            [swank.core.debugger-backends :as dbe])
   (:import (java.io StringReader File)
            (java.util.zip ZipFile)
            (clojure.lang LineNumberingPushbackReader)))
@@ -610,12 +611,15 @@ corresponding attribute values per thread."
   (reset! thread-list []))
 
 
+(defn gen-debugger-env [env]
+  {:env (:env env)
+   :thread (cdt/get-thread-from-id (:thread env))
+   :frame (atom 0)})
+
 (defslimefn sldb-cdt-debug [env]
   (println "gbj1")
-  (try
-    (binding [*cdt-env* env]
-      (sldb-debug nil nil *pending-continuations*))
-    (finally (cdt/clear-current-thread))))
+  (binding [dbe/*debugger-env* (gen-debugger-env env)]
+    (sldb-debug nil nil *pending-continuations*)))
 
 
 (defslimefn sldb-line-bp [file line]

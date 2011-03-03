@@ -22,20 +22,22 @@
   (reset! control-thread
           (get-thread "Swank Control Thread")))
 
-(defn event-data [e]
+(defn get-env [e]
   (condp = (second (re-find #"^(.*)Event@" (str e)))
       "Breakpoint"
-    (list (str "CDT " e) "From here you can: e/eval, v/show source, s/step, x/next, o/exit func" nil)
+    (list (str "CDT " e) "From here you can: e/eval, v/show source, s/step, x/next, o/exit func" '((:show-frame-source 0)))
     "Step"
-    (list (str "CDT " e) "From here you can: e/eval, v/show source, s/step, x/next, o/exit func" nil)
+    (list (str "CDT " e) "From here you can: e/eval, v/show source, s/step, x/next, o/exit func" '((:show-frame-source 0)))
     "Exception"
-    (list (str "CDT " e) "From here you can: e/eval, v/show source" nil)))
+    (list (str "CDT " e) "From here you can: e/eval, v/show source" '((:show-frame-source 0)))))
+
+(defn event-data [e]
+  {:thread (.uniqueID (cdt/get-thread e))
+   :env (get-env e)})
 
 (defn default-handler [e]
   (when-not @control-thread
     (set-control-thread))
-  ;; gbj: get rid of this once i switch to cdt-env
-  (cdt/set-current-thread (cdt/get-thread e))
 
   (prn "gbj43" `(:cdt-rex ~(pr-str `(swank.commands.basic/sldb-cdt-debug ~(event-data e)))  true))
   (mb/send @control-thread
@@ -53,15 +55,16 @@
   (set-control-thread))
 
 (defmethod swank-eval :cdt [form]
-           (cdt/safe-reval form true identity))
+           (cdt/safe-reval (:thread *debugger-env*)
+                           @(:frame *debugger-env*) form true identity))
 
 (defn get-full-stack-trace []
    (.getStackTrace (get-thread #_(.getName @control-thread)
-                               (.name (cdt/ct)))))
+                               (.name (:thread *debugger-env*)))))
 
 (defmethod get-stack-trace :cdt [n]
            (println "gbj31" (type n) n)
-           (cdt/scf n)
+           (reset! (:frame *debugger-env*) n)
            (nth (get-full-stack-trace) n))
 
 (defmethod exception-stacktrace :cdt [_]
@@ -72,10 +75,10 @@
 
 (defmethod debugger-condition-for-emacs :cdt []
            (println "gbj5")
-           core/*cdt-env*)
+           (:env *debugger-env*))
 
 (defn exception? []
-  (.startsWith (first core/*cdt-env*) "CDT Exception"))
+  (.startsWith (first (:env *debugger-env*)) "CDT Exception"))
 
 (defn get-quit-exception []
   (if (exception?)
@@ -97,22 +100,24 @@
            (doall (take (- end start) (drop start (exception-stacktrace nil)))))
 
 (defmethod eval-string-in-frame-internal :cdt [string n]
-  (cdt/scf n)
-  (cdt/safe-reval (read-string string) true identity))
+  (reset! (:frame *debugger-env*) n)
+  (cdt/safe-reval (:thread *debugger-env*)
+                  @(:frame *debugger-env*) (read-string string) true identity))
 
 (defmacro make-cdt-method [name func]
   `(defmethod ~name :cdt []
-              (println "gbj " '~func)
-              (~(ns-resolve (the-ns 'com.georgejahad.cdt) func))
+              (println "gbj " '~func  (:thread *debugger-env*) ~(ns-resolve (the-ns 'com.georgejahad.cdt) func))
+              (~(ns-resolve (the-ns 'com.georgejahad.cdt) func)
+               (:thread *debugger-env*))
               true))
 
 (make-cdt-method step step)
 (make-cdt-method next step-over)
 (make-cdt-method finish finish)
-(make-cdt-method continue cont)
+(make-cdt-method continue continue-thread)
 
 (defmethod show-source :cdt []
-           (core/send-to-emacs '(:eval-no-wait "sldb-show-frame-source" (0))))
+#_           (core/send-to-emacs '(:eval-no-wait "sldb-show-frame-source" (0))))
 
 (backend-init)
 
