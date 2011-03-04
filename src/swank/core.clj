@@ -392,7 +392,8 @@ values."
 
          (= action :cdt-rex)
          (let [[form-string thread] args
-               thread (thread-for-evaluation thread conn)]
+               thread (set-dbe-thread
+                       action #(thread-for-evaluation thread conn))]
            (mb/send thread (read-string form-string)))
          
          (= action :return)
@@ -442,19 +443,17 @@ values."
     (with-bindings *current-env*
       (eval expr))))
 
-(defmethod step :default []
-           true)
+(defmethod step :default [] true)
 
-(defmethod next :default []
-           true)
+(defmethod next :default [] true)
 
-(defmethod continue :default []
-           true)
+(defmethod continue :default [] true)
 
-(defmethod finish :default []
-           true)
-(defmethod show-source :default []
-           nil)
+(defmethod finish :default [] true)
+
+(defmethod show-source :default [] nil)
+
+(defmethod set-dbe-thread :default [_ f] (f))
 
 (defmethod swank-eval :default [form]
            (eval (with-env-locals form)))

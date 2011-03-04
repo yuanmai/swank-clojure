@@ -2,7 +2,8 @@
   (:refer-clojure :exclude [next])
   (:require [com.georgejahad.cdt :as cdt]
             [swank.util.concurrent.mbox :as mb]
-            [swank.core :as core])
+            [swank.core :as core]
+            [swank.util.concurrent.thread :as st])
   (:use swank.core.debugger-backends))
 
 (defn match-name [thread-name]
@@ -17,10 +18,34 @@
           (get-all-threads))))
 
 (def control-thread (atom nil))
-
 (defn set-control-thread []
   (reset! control-thread
           (get-thread "Swank Control Thread")))
+
+(def cdt-thread-group-name #"Clojure Debugging Toolkit")
+(defonce cdt-thread-group (ThreadGroup. (str cdt-thread-group-name)))
+(def system-thread-group-names #{#"JDI \[\d*\]" #"system"})
+(def system-thread-groups (atom []))
+(defn system-thread-group? [g]
+  (some #(re-find % (.name g)) system-thread-group-names))
+
+(defn set-system-thread-groups []
+  (reset! system-thread-groups
+          (filter system-thread-group?
+                  (cdt/main-thread-groups))))
+(defn get-system-thread-groups [] @system-thread-groups)
+
+(def system-threads (atom []))
+(def system-thread-names #{#"^CDT Event Handler$" #"^Swank Control Thread$" #"^Read Loop Thread$"
+                           #"^Socket Server \[\d*\]$"})
+(defn system-thread? [t]
+  (some #(re-find % (.name t)) system-thread-names))
+
+(defn set-system-threads []
+  (reset! system-threads
+          (filter system-thread? (cdt/list-threads))))
+
+(defn get-system-threads [] @system-threads)
 
 (defn get-env [e]
   (condp = (second (re-find #"^(.*)Event@" (str e)))
@@ -52,7 +77,9 @@
   (cdt/set-handler cdt/breakpoint-handler default-handler)
   (cdt/set-handler cdt/step-handler default-handler)
   (reset! cdt/CDT-DISPLAY-MSG display-background-msg)
-  (set-control-thread))
+  (set-control-thread)
+  (set-system-threads)
+  (set-system-thread-groups))
 
 (defmethod swank-eval :cdt [form]
            (cdt/safe-reval (:thread *debugger-env*)
@@ -119,5 +146,8 @@
 (defmethod show-source :cdt []
 #_           (core/send-to-emacs '(:eval-no-wait "sldb-show-frame-source" (0))))
 
+(defmethod set-dbe-thread :cdt-rex [_ f]
+           (binding [st/*new-thread-group* cdt-thread-group]
+             (f)))
 (backend-init)
 
