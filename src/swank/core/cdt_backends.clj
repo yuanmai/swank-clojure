@@ -18,21 +18,23 @@
           (get-all-threads))))
 
 (def control-thread (atom nil))
+
 (defn set-control-thread []
   (reset! control-thread
           (get-thread "Swank Control Thread")))
 
 (def cdt-thread-group-name #"Clojure Debugging Toolkit")
 (defonce cdt-thread-group (ThreadGroup. (str cdt-thread-group-name)))
-(def system-thread-group-names #{#"JDI \[\d*\]" #"system"})
+(def system-thread-group-names #{#"JDI main" #"JDI \[\d*\]" #"system"})
 (def system-thread-groups (atom []))
 (defn system-thread-group? [g]
   (some #(re-find % (.name g)) system-thread-group-names))
 
 (defn set-system-thread-groups []
   (reset! system-thread-groups
-          (filter system-thread-group?
-                  (cdt/main-thread-groups))))
+          (conj (filter system-thread-group?
+                        (cdt/main-thread-groups))
+                cdt-thread-group)))
 (defn get-system-thread-groups [] @system-thread-groups)
 
 (def system-threads (atom []))
@@ -76,6 +78,7 @@
   (cdt/set-handler cdt/exception-handler default-handler)
   (cdt/set-handler cdt/breakpoint-handler default-handler)
   (cdt/set-handler cdt/step-handler default-handler)
+  (cdt/create-thread-start-request)
   (reset! cdt/CDT-DISPLAY-MSG display-background-msg)
   (set-control-thread)
   (set-system-threads)
