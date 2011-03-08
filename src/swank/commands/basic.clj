@@ -621,7 +621,6 @@ corresponding attribute values per thread."
   (binding [dbe/*debugger-env* (gen-debugger-env env)]
     (sldb-debug nil nil *pending-continuations*)))
 
-
 (defslimefn sldb-line-bp [file line]
   (println "gbjlb")
-  (cdt/line-bp file line))
+  (dbe/line-bp file line))

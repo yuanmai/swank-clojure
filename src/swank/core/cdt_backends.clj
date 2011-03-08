@@ -25,29 +25,29 @@
 
 (def cdt-thread-group-name #"Clojure Debugging Toolkit")
 (defonce cdt-thread-group (ThreadGroup. (str cdt-thread-group-name)))
-(def system-thread-group-names #{#"JDI main" #"JDI \[\d*\]" #"system"})
+(def system-thread-group-names #{#"JDI main" #"JDI \[\d*\]" #"system"
+                                 cdt-thread-group-name})
 (def system-thread-groups (atom []))
 (defn system-thread-group? [g]
   (some #(re-find % (.name g)) system-thread-group-names))
 
 (defn set-system-thread-groups []
   (reset! system-thread-groups
-          (conj (filter system-thread-group?
-                        (cdt/main-thread-groups))
-                cdt-thread-group)))
+          (filter system-thread-group?
+                  (cdt/all-thread-groups))))
+
 (defn get-system-thread-groups [] @system-thread-groups)
 
-(def system-threads (atom []))
 (def system-thread-names #{#"^CDT Event Handler$" #"^Swank Control Thread$" #"^Read Loop Thread$"
                            #"^Socket Server \[\d*\]$"})
 (defn system-thread? [t]
   (some #(re-find % (.name t)) system-thread-names))
 
-(defn set-system-threads []
-  (reset! system-threads
-          (filter system-thread? (cdt/list-threads))))
+(defn get-system-threads []
+  (filter system-thread? (cdt/list-threads)))
 
-(defn get-system-threads [] @system-threads)
+(defn get-non-system-threads []
+  (remove system-thread? (cdt/list-threads)))
 
 (defn get-env [e]
   (condp = (second (re-find #"^(.*)Event@" (str e)))
@@ -81,7 +81,6 @@
   (cdt/create-thread-start-request)
   (reset! cdt/CDT-DISPLAY-MSG display-background-msg)
   (set-control-thread)
-  (set-system-threads)
   (set-system-thread-groups))
 
 (defmethod swank-eval :cdt [form]
@@ -152,5 +151,11 @@
 (defmethod set-dbe-thread :cdt-rex [_ f]
            (binding [st/*new-thread-group* cdt-thread-group]
              (f)))
+
+(defmethod line-bp :cdt [file line]
+           (cdt/line-bp file line
+                        (get-non-system-threads)
+                        (get-system-thread-groups) true))
+
 (backend-init)
 

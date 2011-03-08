@@ -14,6 +14,8 @@
 
 (defmulti set-dbe-thread (fn [action _] action))
 
+(defmulti line-bp (constantly :cdt))
+
 (def-backend-multimethods
   [exception-stacktrace debugger-condition-for-emacs calculate-restarts
    build-backtrace eval-string-in-frame-internal step get-stack-trace
