@@ -207,13 +207,14 @@
         (println "Macro"))
       (println " " (:doc m)))))
 
-(def print-doc (if (-> (resolve 'clojure.core/print-doc) meta :private)
-                 print-doc*
-                 (resolve 'clojure.core/print-doc)))
+(def print-doc (let [print-doc (resolve 'clojure.core/print-doc)]
+		 (if (or (nil? print-doc) (-> print-doc meta :private))
+		   print-doc*
+		   print-doc)))
 
 (defn- describe-to-string [var]
   (with-out-str
-    (print-doc var)))
+    (print-doc (meta var))))
 
 (defn- describe-symbol* [symbol-name]
   (with-emacs-package
