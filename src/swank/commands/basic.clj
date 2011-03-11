@@ -157,7 +157,7 @@
       (dosync (ref-set libs-ref #{}))
       (pr-str (clojure.core/load-file file-name))
          (finally
-          (dosync (ref-set libs-ref libs))))))
+          (dosync (alter libs-ref into libs))))))
 
 (defn- line-at-position [file position]
   (try
