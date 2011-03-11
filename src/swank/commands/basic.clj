@@ -151,7 +151,13 @@
        (compile-file-for-emacs* file-name))))
 
 (defslimefn load-file [file-name]
-  (pr-str (clojure.core/load-file file-name)))
+  (let [libs-ref @(resolve 'clojure.core/*loaded-libs*)
+        libs @libs-ref]
+    (try
+      (dosync (ref-set libs-ref #{}))
+      (pr-str (clojure.core/load-file file-name))
+         (finally
+          (dosync (ref-set libs-ref libs))))))
 
 (defn- line-at-position [file position]
   (try
