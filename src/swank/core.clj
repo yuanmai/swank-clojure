@@ -5,8 +5,7 @@
         (swank.util.concurrent thread)
         (swank.core connection hooks threadmap
                     debugger-backends))
-  (:require (swank.util.concurrent [mbox :as mb])
-            [com.georgejahad [cdt :as cdt]]))
+  (:require (swank.util.concurrent [mbox :as mb])))
 
 ;; Protocol version
 (defonce protocol-version (atom "20100404"))
@@ -438,7 +437,7 @@ values."
        (with-connection conn
          (continuously (dispatch-event (mb/receive (current-thread)) conn))))))
 
-(defmethod eval-string-in-frame-internal :default [expr n]
+(defmethod eval-string-in-frame :default [expr n]
   (if (and (zero? n) *current-env*)
     (with-bindings *current-env*
       (eval expr))))
@@ -458,15 +457,5 @@ values."
 (defmethod swank-eval :default [form]
            (eval (with-env-locals form)))
 
-(def swank-eval-core swank-eval)
-
 (defmethod get-stack-trace :default [n]
            (nth (.getStackTrace *current-exception*) n))
-
-(def get-stack-trace-core get-stack-trace)
-
-(defn eval-string-in-frame-core [expr n]
-  (eval-string-in-frame-internal expr n))
-
-(defn build-backtrace-core [start end]
-  (build-backtrace start end))

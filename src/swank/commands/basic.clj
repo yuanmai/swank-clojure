@@ -6,7 +6,6 @@
         (swank.clj-contrib pprint macroexpand))
   (:require (swank.util [sys :as sys])
             (swank.commands [xref :as xref])
-            [com.georgejahad [cdt :as cdt]]
             [swank.core.debugger-backends :as dbe])
   (:import (java.io StringReader File)
            (java.util.zip ZipFile)
@@ -46,7 +45,7 @@
            (if (= form rdr)
              [value last-form]
              (recur (read rdr false rdr)
-                    (swank-eval-core form)
+                    (dbe/swank-eval form)
                     form)))))))
 
 (defn- compile-region
@@ -524,21 +523,13 @@ that symbols accessible in the current namespace go first."
   (if-let [restart (*sldb-restarts* :continue)]
     (invoke-restart restart)))
 
-(defslimefn sldb-step [_]
-  (throw debug-step-exception))
-
-(defslimefn sldb-next [_]
-  (throw debug-next-exception))
-
-(defslimefn sldb-out [_]
-  (throw debug-finish-exception))
-
 (defslimefn sldb-abort []
   (if-let [restart (*sldb-restarts* :abort)]
     (invoke-restart restart)))
 
+
 (defslimefn backtrace [start end]
-  (build-backtrace-core start end))
+  (dbe/build-backtrace start end))
 
 (defslimefn buffer-first-change [file-name] nil)
 
@@ -560,16 +551,16 @@ that symbols accessible in the current namespace go first."
   (build-debugger-info-for-emacs start end))
 
 (defslimefn eval-string-in-frame [st n]
-  (eval-string-in-frame-core st n))
+  (dbe/eval-string-in-frame st n))
 
 (defslimefn frame-source-location [n]
   (source-location-for-frame
-   (get-stack-trace-core n)))
+   (dbe/get-stack-trace n)))
 
 ;; Older versions of slime use this instead of the above.
 (defslimefn frame-source-location-for-emacs [n]
   (source-location-for-frame
-      (get-stack-trace-core n)))
+      (dbe/get-stack-trace n)))
 
 (defslimefn create-repl [target] '("user" "user"))
 
@@ -609,18 +600,3 @@ corresponding attribute values per thread."
 
 (defslimefn quit-thread-browser []
   (reset! thread-list []))
-
-
-(defn gen-debugger-env [env]
-  {:env (:env env)
-   :thread (cdt/get-thread-from-id (:thread env))
-   :frame (atom 0)})
-
-(defslimefn sldb-cdt-debug [env]
-  (println "gbj1")
-  (binding [dbe/*debugger-env* (gen-debugger-env env)]
-    (sldb-debug nil nil *pending-continuations*)))
-
-(defslimefn sldb-line-bp [file line]
-  (println "gbjlb")
-  (dbe/line-bp file line))

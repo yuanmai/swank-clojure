@@ -18,5 +18,5 @@
 
 (def-backend-multimethods
   [exception-stacktrace debugger-condition-for-emacs calculate-restarts
-   build-backtrace eval-string-in-frame-internal step get-stack-trace
+   build-backtrace eval-string-in-frame step get-stack-trace
    show-source next finish continue swank-eval])

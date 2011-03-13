@@ -4,7 +4,8 @@
             [swank.util.concurrent.mbox :as mb]
             [swank.core :as core]
             [swank.util.concurrent.thread :as st])
-  (:use swank.core.debugger-backends))
+  (:use swank.core.debugger-backends
+        [swank.commands :only [defslimefn]]))
 
 (defn match-name [thread-name]
   #(re-find (re-pattern (str "^" thread-name "$")) (.getName %)))
@@ -128,7 +129,7 @@
 (defmethod build-backtrace :cdt [start end]
            (doall (take (- end start) (drop start (exception-stacktrace nil)))))
 
-(defmethod eval-string-in-frame-internal :cdt [string n]
+(defmethod eval-string-in-frame :cdt [string n]
   (reset! (:frame *debugger-env*) n)
   (cdt/safe-reval (:thread *debugger-env*)
                   @(:frame *debugger-env*) (read-string string) true identity))
@@ -161,5 +162,30 @@
            (cdt/set-catch class :all
                         (get-non-system-threads)
                         (get-system-thread-groups) true))
+
+(defn gen-debugger-env [env]
+  {:env (:env env)
+   :thread (cdt/get-thread-from-id (:thread env))
+   :frame (atom 0)})
+
+(defslimefn sldb-cdt-debug [env]
+  (println "gbj1")
+  (binding [*debugger-env* (gen-debugger-env env)]
+    (core/sldb-debug nil nil core/*pending-continuations*)))
+
+(defslimefn sldb-line-bp [file line]
+  (println "gbjlb")
+  (line-bp file line))
+
+(defslimefn sldb-step [_]
+  (throw core/debug-step-exception))
+
+(defslimefn sldb-next [_]
+  (throw core/debug-next-exception))
+
+(defslimefn sldb-out [_]
+  (throw core/debug-finish-exception))
+
+
 (backend-init)
 
