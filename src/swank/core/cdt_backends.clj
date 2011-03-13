@@ -71,10 +71,6 @@
 (make-cdt-method finish finish)
 (make-cdt-method continue continue-thread)
 
-(defmethod set-dbe-thread :dbe-rex [_ f]
-           (binding [st/*new-thread-group* cutils/cdt-thread-group]
-             (f)))
-
 (defmethod line-bp :cdt [file line]
            (cdt/line-bp file line
                         (cutils/get-non-system-threads)

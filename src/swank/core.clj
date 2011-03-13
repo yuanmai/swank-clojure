@@ -291,17 +291,24 @@ values."
   (dosync
    (commute active-threads (fn [threads] (remove #(= % thread) threads)))))
 
+(def swank-worker-thread-name "Swank Worker Thread")
+(defonce swank-worker-thread-group
+  (ThreadGroup. swank-worker-thread-name))
+
 (defn spawn-worker-thread
   "Spawn an thread that blocks for a single command from the control
    thread, executes it, then terminates."
   ([conn]
-     (dothread-swank
-       (try
-        (add-active-thread (current-thread))
-        (thread-set-name "Swank Worker Thread")
-        (eval-from-control)
-        (finally
-         (remove-active-thread (current-thread)))))))
+     ;; binding is a signal to dbe's not to allow bp's on this thread
+     ;;  because it will hang swank
+     (binding [*new-thread-group* swank-worker-thread-group]
+         (dothread-swank
+          (try
+            (add-active-thread (current-thread))
+            (thread-set-name swank-worker-thread-name)
+            (eval-from-control)
+            (finally
+             (remove-active-thread (current-thread))))))))
 
 (defn spawn-repl-thread
   "Spawn an thread that sets itself as the current
@@ -353,8 +360,7 @@ values."
          ;; handle events from the debugger backend
          (= action :dbe-rex)
          (let [[form-string thread] args
-               thread (set-dbe-thread
-                       action #(thread-for-evaluation thread conn))]
+               thread (thread-for-evaluation thread conn)]
            (mb/send thread (read-string form-string)))
 
          (= action :return)

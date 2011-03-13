@@ -16,8 +16,6 @@
    build-backtrace eval-string-in-frame step get-stack-trace
    next finish continue swank-eval handled-exception? debugger-exception?])
 
-(defmulti set-dbe-thread (fn [action _] action))
-
 (defmulti line-bp (constantly :cdt))
 
 

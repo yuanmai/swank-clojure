@@ -22,11 +22,8 @@
   (reset! control-thread
           (get-thread "Swank Control Thread")))
 
-(def cdt-thread-group-name #"Clojure Debugging Toolkit")
-(defonce cdt-thread-group (ThreadGroup. (str cdt-thread-group-name)))
-
 (def system-thread-group-names #{#"JDI main" #"JDI \[\d*\]" #"system"
-                                 cdt-thread-group-name})
+                                 (re-pattern core/swank-worker-thread-name)})
 (def system-thread-groups (atom []))
 (defn- system-thread-group? [g]
   (some #(re-find % (.name g)) system-thread-group-names))

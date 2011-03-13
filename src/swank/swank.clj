@@ -74,10 +74,6 @@
 (defn start-repl
   "Start the server wrapped in a repl. Use this to embed swank in your code."
   ([port & opts]
-
-     ;; GBJ-NOTE: remove this after re-org
-     (require 'swank.core.cdt-backends)
-     
      (let [stop (atom false)
            opts (merge {:port (Integer. port)
                         :encoding (or (System/getProperty "swank.encoding")
