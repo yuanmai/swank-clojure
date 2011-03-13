@@ -157,5 +157,9 @@
                         (get-non-system-threads)
                         (get-system-thread-groups) true))
 
+(defn set-catch [class]
+           (cdt/set-catch class :all
+                        (get-non-system-threads)
+                        (get-system-thread-groups) true))
 (backend-init)
 
