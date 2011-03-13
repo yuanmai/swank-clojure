@@ -1,6 +1,5 @@
 (ns swank.core.debugger-backends
-  (:refer-clojure :exclude [next])
-  (:require [com.georgejahad.cdt :as cdt]))
+  (:refer-clojure :exclude [next]))
 
 (def #^{:dynamic true} *debugger-env* nil)
 

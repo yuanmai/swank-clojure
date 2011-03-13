@@ -1,160 +1,67 @@
 (ns swank.core.cdt-backends
   (:refer-clojure :exclude [next])
   (:require [com.georgejahad.cdt :as cdt]
-            [swank.util.concurrent.mbox :as mb]
+            [swank.core.cdt-utils :as cutils]
             [swank.core :as core]
             [swank.util.concurrent.thread :as st])
   (:use swank.core.debugger-backends
         [swank.commands :only [defslimefn]]))
 
-(defn match-name [thread-name]
-  #(re-find (re-pattern (str "^" thread-name "$")) (.getName %)))
-
-(defn get-all-threads []
-  (map key (Thread/getAllStackTraces)))
-
-(defn get-thread [thread-name]
-  (first (filter
-          (match-name thread-name)
-          (get-all-threads))))
-
-(def control-thread (atom nil))
-
-(defn set-control-thread []
-  (reset! control-thread
-          (get-thread "Swank Control Thread")))
-
-(def cdt-thread-group-name #"Clojure Debugging Toolkit")
-(defonce cdt-thread-group (ThreadGroup. (str cdt-thread-group-name)))
-(def system-thread-group-names #{#"JDI main" #"JDI \[\d*\]" #"system"
-                                 cdt-thread-group-name})
-(def system-thread-groups (atom []))
-(defn system-thread-group? [g]
-  (some #(re-find % (.name g)) system-thread-group-names))
-
-(defn set-system-thread-groups []
-  (reset! system-thread-groups
-          (filter system-thread-group?
-                  (cdt/all-thread-groups))))
-
-(defn get-system-thread-groups [] @system-thread-groups)
-
-(def system-thread-names #{#"^CDT Event Handler$" #"^Swank Control Thread$" #"^Read Loop Thread$"
-                           #"^Socket Server \[\d*\]$"})
-(defn system-thread? [t]
-  (some #(re-find % (.name t)) system-thread-names))
-
-(defn get-system-threads []
-  (filter system-thread? (cdt/list-threads)))
-
-(defn get-non-system-threads []
-  (remove system-thread? (cdt/list-threads)))
-
-(defn get-env [e]
-  (condp = (second (re-find #"^(.*)Event@" (str e)))
-      "Breakpoint"
-    (list (str "CDT " e) "From here you can: e/eval, v/show source, s/step, x/next, o/exit func" '((:show-frame-source 0)))
-    "Step"
-    (list (str "CDT " e) "From here you can: e/eval, v/show source, s/step, x/next, o/exit func" '((:show-frame-source 0)))
-    "Exception"
-    (list (str "CDT " e) "From here you can: e/eval, v/show source" '((:show-frame-source 0)))))
-
-(defn event-data [e]
-  {:thread (.uniqueID (cdt/get-thread e))
-   :env (get-env e)})
-
-(defn default-handler [e]
-  (when-not @control-thread
-    (set-control-thread))
-
-  (prn "gbj43" `(:dbe-rex ~(pr-str `(swank.core.cdt-backends/sldb-cdt-debug ~(event-data e)))  true))
-  (mb/send @control-thread
-           `(:dbe-rex ~(pr-str `(swank.core.cdt-backends/sldb-cdt-debug ~(event-data e))) true)))
-
-(defn display-background-msg [s]
-  (mb/send @control-thread (list :eval-no-wait "slime-message" (list "%s" s))))
-
 (defn backend-init []
   (cdt/cdt-attach-pid)
-  (cdt/set-handler cdt/exception-handler default-handler)
-  (cdt/set-handler cdt/breakpoint-handler default-handler)
-  (cdt/set-handler cdt/step-handler default-handler)
+  (cdt/set-handler cdt/exception-handler cutils/default-handler)
+  (cdt/set-handler cdt/breakpoint-handler cutils/default-handler)
+  (cdt/set-handler cdt/step-handler cutils/default-handler)
   (cdt/create-thread-start-request)
-  (reset! cdt/CDT-DISPLAY-MSG display-background-msg)
-  (set-control-thread)
-  (set-system-thread-groups))
+  (reset! cdt/CDT-DISPLAY-MSG cutils/display-background-msg)
+  (cutils/set-control-thread)
+  (cutils/set-system-thread-groups))
 
 (defmethod swank-eval :cdt [form]
            (cdt/safe-reval (:thread *debugger-env*)
                            @(:frame *debugger-env*) form true identity))
 
-(defn get-full-stack-trace []
-   (.getStackTrace (get-thread #_(.getName @control-thread)
+(defn- get-full-stack-trace []
+   (.getStackTrace (cutils/get-thread #_(.getName @control-thread)
                                (.name (:thread *debugger-env*)))))
 
 (defmethod get-stack-trace :cdt [n]
-           (println "gbj31" (type n) n)
            (reset! (:frame *debugger-env*) n)
            (nth (get-full-stack-trace) n))
 
 (defmethod exception-stacktrace :cdt [_]
-           (println "gbj6")
            (map #(list %1 %2 '(:restartable nil))
                 (iterate inc 0)
                 (map str (get-full-stack-trace))))
 
 (defmethod debugger-condition-for-emacs :cdt []
-           (println "gbj5")
            (:env *debugger-env*))
 
-(defonce debug-step-exception (Exception. "Debug step"))
-(defonce debug-next-exception (Exception. "Debug next"))
-(defonce debug-finish-exception (Exception. "Debug finish"))
-(defonce debug-cdt-continue-exception (Exception. "Debug cdt continue"))
-
-(defn- debug-step-exception? [t]
-  (some #(identical? debug-step-exception %) (core/exception-causes t)))
-
-(defn- debug-next-exception? [t]
-  (some #(identical? debug-next-exception %) (core/exception-causes t)))
-
-(defn- debug-finish-exception? [t]
-  (some #(identical? debug-finish-exception %) (core/exception-causes t)))
-
-(defn- debug-cdt-continue-exception? [t]
-  (some #(identical? debug-cdt-continue-exception %) (core/exception-causes t)))
-
-
-(defn exception? []
-  (.startsWith (first (:env *debugger-env*)) "CDT Exception"))
-
-(defn get-quit-exception []
-  (if (exception?)
-    core/debug-abort-exception
-    debug-cdt-continue-exception))
-
 (defmethod calculate-restarts :cdt [_]
-           (let [quit-exception (get-quit-exception)
-                 restarts [(core/make-restart :quit "QUIT" "Quit to the SLIME top level"
+           (let [quit-exception (cutils/get-quit-exception)
+                 restarts [(core/make-restart :quit "QUIT"
+                                              "Quit to the SLIME top level"
                                      (fn [] (throw quit-exception)))]
         restarts (core/add-restart-if
                   (pos? core/*sldb-level*)
                   restarts
-                  :abort "ABORT" (str "ABORT to SLIME level " (dec core/*sldb-level*))
+                  :abort "ABORT" (str "ABORT to SLIME level "
+                                      (dec core/*sldb-level*))
                   (fn [] (throw core/debug-abort-exception)))]
     (into (array-map) restarts)))
 
 (defmethod build-backtrace :cdt [start end]
-           (doall (take (- end start) (drop start (exception-stacktrace nil)))))
+           (doall (take (- end start)
+                        (drop start (exception-stacktrace nil)))))
 
 (defmethod eval-string-in-frame :cdt [string n]
   (reset! (:frame *debugger-env*) n)
   (cdt/safe-reval (:thread *debugger-env*)
-                  @(:frame *debugger-env*) (read-string string) true identity))
+                  @(:frame *debugger-env*)
+                  (read-string string) true identity))
 
 (defmacro make-cdt-method [name func]
   `(defmethod ~name :cdt []
-              (println "gbj " '~func  (:thread *debugger-env*) ~(ns-resolve (the-ns 'com.georgejahad.cdt) func))
               (~(ns-resolve (the-ns 'com.georgejahad.cdt) func)
                (:thread *debugger-env*))
               true))
@@ -165,60 +72,58 @@
 (make-cdt-method continue continue-thread)
 
 (defmethod set-dbe-thread :dbe-rex [_ f]
-           (binding [st/*new-thread-group* cdt-thread-group]
+           (binding [st/*new-thread-group* cutils/cdt-thread-group]
              (f)))
 
 (defmethod line-bp :cdt [file line]
            (cdt/line-bp file line
-                        (get-non-system-threads)
-                        (get-system-thread-groups) true))
+                        (cutils/get-non-system-threads)
+                        (cutils/get-system-thread-groups) true))
 
-(defn set-catch [class]
-           (cdt/set-catch class :all
-                        (get-non-system-threads)
-                        (get-system-thread-groups) true))
+(defmethod debugger-exception? :cdt [t]
+           (or (cutils/debug-cdt-continue-exception? t)
+               (cutils/debug-finish-exception? t)
+               (cutils/debug-next-exception? t)
+               (cutils/debug-step-exception? t)))
 
-(defn gen-debugger-env [env]
+(defmethod handled-exception? :cdt [t]
+  (cond
+   (core/debug-continue-exception? t)
+   true
+   (cutils/debug-step-exception? t)
+   (step)
+   (cutils/debug-next-exception? t)
+   (next)
+   (cutils/debug-cdt-continue-exception? t)
+   (continue)
+   (cutils/debug-finish-exception? t)
+   (finish)))
+
+(defn- gen-debugger-env [env]
   {:env (:env env)
    :thread (cdt/get-thread-from-id (:thread env))
    :frame (atom 0)})
 
 (defslimefn sldb-cdt-debug [env]
-  (println "gbj1")
   (binding [*debugger-env* (gen-debugger-env env)]
     (core/sldb-debug nil nil core/*pending-continuations*)))
 
 (defslimefn sldb-line-bp [file line]
-  (println "gbjlb")
   (line-bp file line))
 
 (defslimefn sldb-step [_]
-  (throw debug-step-exception))
+  (throw cutils/debug-step-exception))
 
 (defslimefn sldb-next [_]
-  (throw debug-next-exception))
+  (throw cutils/debug-next-exception))
 
 (defslimefn sldb-out [_]
-  (throw debug-finish-exception))
+  (throw cutils/debug-finish-exception))
 
-(defmethod debugger-exception? :cdt [t]
-  (or (debug-cdt-continue-exception? t) (debug-finish-exception? t)
-      (debug-next-exception? t) (debug-step-exception? t)))
-
-(defmethod handled-exception? :cdt [t]
-  (println "gbjt" t)
-  (cond
-   (core/debug-continue-exception? t)
-   true
-   (debug-step-exception? t)
-   (step)
-   (debug-next-exception? t)
-   (next)
-   (debug-cdt-continue-exception? t)
-   (continue)
-   (debug-finish-exception? t)
-   (finish)))
-
+(defn set-catch [class]
+           (cdt/set-catch class :all
+                        (cutils/get-non-system-threads)
+                        (cutils/get-system-thread-groups) true))
 
 (backend-init)
 

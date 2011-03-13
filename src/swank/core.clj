@@ -356,7 +356,7 @@ values."
                thread (set-dbe-thread
                        action #(thread-for-evaluation thread conn))]
            (mb/send thread (read-string form-string)))
-         
+
          (= action :return)
          (let [[thread & ret] args]
            (binding [*print-level* nil, *print-length* nil]
