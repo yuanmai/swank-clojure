@@ -57,10 +57,6 @@
 (defonce debug-quit-exception (Exception. "Debug quit"))
 (defonce debug-continue-exception (Exception. "Debug continue"))
 (defonce debug-abort-exception (Exception. "Debug abort"))
-(defonce debug-step-exception (Exception. "Debug step"))
-(defonce debug-next-exception (Exception. "Debug next"))
-(defonce debug-finish-exception (Exception. "Debug finish"))
-(defonce debug-cdt-continue-exception (Exception. "Debug cdt continue"))
 
 (def #^{:dynamic true} #^Throwable *current-exception* nil)
 
@@ -97,6 +93,7 @@ values."
   (with-emacs-package
    (eval form)))
 
+
 (defn eval-from-control
   "Blocks for a mbox message from the control thread and executes it
    when received. The mbox message is expected to be a slime-fn."
@@ -116,41 +113,11 @@ values."
 (defn- debug-quit-exception? [t]
   (some #(identical? debug-quit-exception %) (exception-causes t)))
 
-(defn- debug-continue-exception? [t]
+(defn debug-continue-exception? [t]
   (some #(identical? debug-continue-exception %) (exception-causes t)))
 
 (defn- debug-abort-exception? [t]
   (some #(identical? debug-abort-exception %) (exception-causes t)))
-
-(defn- debug-step-exception? [t]
-  (some #(identical? debug-step-exception %) (exception-causes t)))
-
-(defn- debug-next-exception? [t]
-  (some #(identical? debug-next-exception %) (exception-causes t)))
-
-(defn- debug-finish-exception? [t]
-  (some #(identical? debug-finish-exception %) (exception-causes t)))
-
-(defn- debug-cdt-continue-exception? [t]
-  (some #(identical? debug-cdt-continue-exception %) (exception-causes t)))
-
-(defn- debug-cdt-exception? [t]
-  (or (debug-cdt-continue-exception? t) (debug-finish-exception? t)
-      (debug-next-exception? t) (debug-step-exception? t)))
-
-(defn- debug-handle-exception? [t]
-  (println "gbjt" t)
-  (cond
-   (debug-continue-exception? t)
-   true
-   (debug-step-exception? t)
-   (step)
-   (debug-next-exception? t)
-   (next)
-   (debug-cdt-continue-exception? t)
-   (continue)
-   (debug-finish-exception? t)
-   (finish)))
 
 (defmethod exception-stacktrace :default [t]
   (map #(list %1 %2 '(:restartable nil))
@@ -226,12 +193,10 @@ values."
    encountered (an continue to perform the same thing). It will
    continue until a *debug-quit* exception is encountered."
   [level]
-  (println "gbj4")
   (try
    (send-to-emacs
     (list* :debug (current-thread) level
            (build-debugger-info-for-emacs 0 sldb-initial-frames)))
-   (show-source)
    ([] (continuously
         (do
           (send-to-emacs `(:debug-activate ~(current-thread) ~level nil))
@@ -239,13 +204,11 @@ values."
    (catch Throwable t
      (send-to-emacs
       `(:debug-return ~(current-thread) ~*sldb-level* ~sldb-stepping-p))
-     (println "gbj10")
-     (if-not (debug-handle-exception? t)
+     (if-not (handled-exception? t)
        (throw t)))))
 
 (defn invoke-debugger
   [locals #^Throwable thrown id]
-  (println "gbj3")
   (binding [*current-env* locals
             *current-exception* thrown
             *sldb-restarts* (calculate-restarts thrown)
@@ -253,14 +216,12 @@ values."
     (sldb-loop *sldb-level*)))
 
 (defn sldb-debug [locals thrown id]
-  (println "gbj2")
   (try
    (invoke-debugger nil thrown id)
    (catch Throwable t
-     (if (and (pos? *sldb-level*)
+     (when (and (pos? *sldb-level*)
                 (not (debug-abort-exception? t)))
-       (throw t)
-       (.printStackTrace t)))))
+       (throw t)))))
 
 (defmacro break
   []
@@ -309,7 +270,7 @@ values."
         (send-to-emacs `(:return ~(thread-name (current-thread)) (:abort) ~id))
         (throw t))
 
-      (debug-cdt-exception? t)
+      (debugger-exception? t)
       (throw t)
       :else
       (do
@@ -389,7 +350,8 @@ values."
                thread (thread-for-evaluation thread conn)]
            (mb/send thread `(eval-for-emacs ~form-string ~package ~id)))
 
-         (= action :cdt-rex)
+         ;; handle events from the debugger backend
+         (= action :dbe-rex)
          (let [[form-string thread] args
                thread (set-dbe-thread
                        action #(thread-for-evaluation thread conn))]
@@ -404,8 +366,7 @@ values."
                   :presentation-start :presentation-end
                   :new-package :new-features :ed :percent-apply
                   :indentation-update
-                  :eval-no-wait :background-message :inspect
-                  :show-frame-source)
+                  :eval-no-wait :background-message :inspect)
          (binding [*print-level* nil, *print-length* nil]
            (write-to-connection conn ev))
 
@@ -442,20 +403,14 @@ values."
     (with-bindings *current-env*
       (eval expr))))
 
-(defmethod step :default [] true)
-
-(defmethod next :default [] true)
-
-(defmethod continue :default [] true)
-
-(defmethod finish :default [] true)
-
-(defmethod show-source :default [] nil)
-
-(defmethod set-dbe-thread :default [_ f] (f))
-
 (defmethod swank-eval :default [form]
            (eval (with-env-locals form)))
 
 (defmethod get-stack-trace :default [n]
            (nth (.getStackTrace *current-exception*) n))
+
+(defmethod handled-exception? :default [t]
+           (debug-continue-exception? t))
+
+(defmethod debugger-exception? :default [t]
+           false)

@@ -67,9 +67,9 @@
   (when-not @control-thread
     (set-control-thread))
 
-  (prn "gbj43" `(:cdt-rex ~(pr-str `(swank.commands.basic/sldb-cdt-debug ~(event-data e)))  true))
+  (prn "gbj43" `(:dbe-rex ~(pr-str `(swank.core.cdt-backends/sldb-cdt-debug ~(event-data e)))  true))
   (mb/send @control-thread
-           `(:cdt-rex ~(pr-str `(swank.commands.basic/sldb-cdt-debug ~(event-data e))) true)))
+           `(:dbe-rex ~(pr-str `(swank.core.cdt-backends/sldb-cdt-debug ~(event-data e))) true)))
 
 (defn display-background-msg [s]
   (mb/send @control-thread (list :eval-no-wait "slime-message" (list "%s" s))))
@@ -107,13 +107,31 @@
            (println "gbj5")
            (:env *debugger-env*))
 
+(defonce debug-step-exception (Exception. "Debug step"))
+(defonce debug-next-exception (Exception. "Debug next"))
+(defonce debug-finish-exception (Exception. "Debug finish"))
+(defonce debug-cdt-continue-exception (Exception. "Debug cdt continue"))
+
+(defn- debug-step-exception? [t]
+  (some #(identical? debug-step-exception %) (core/exception-causes t)))
+
+(defn- debug-next-exception? [t]
+  (some #(identical? debug-next-exception %) (core/exception-causes t)))
+
+(defn- debug-finish-exception? [t]
+  (some #(identical? debug-finish-exception %) (core/exception-causes t)))
+
+(defn- debug-cdt-continue-exception? [t]
+  (some #(identical? debug-cdt-continue-exception %) (core/exception-causes t)))
+
+
 (defn exception? []
   (.startsWith (first (:env *debugger-env*)) "CDT Exception"))
 
 (defn get-quit-exception []
   (if (exception?)
     core/debug-abort-exception
-    core/debug-cdt-continue-exception))
+    debug-cdt-continue-exception))
 
 (defmethod calculate-restarts :cdt [_]
            (let [quit-exception (get-quit-exception)
@@ -146,10 +164,7 @@
 (make-cdt-method finish finish)
 (make-cdt-method continue continue-thread)
 
-(defmethod show-source :cdt []
-#_           (core/send-to-emacs '(:eval-no-wait "sldb-show-frame-source" (0))))
-
-(defmethod set-dbe-thread :cdt-rex [_ f]
+(defmethod set-dbe-thread :dbe-rex [_ f]
            (binding [st/*new-thread-group* cdt-thread-group]
              (f)))
 
@@ -178,13 +193,31 @@
   (line-bp file line))
 
 (defslimefn sldb-step [_]
-  (throw core/debug-step-exception))
+  (throw debug-step-exception))
 
 (defslimefn sldb-next [_]
-  (throw core/debug-next-exception))
+  (throw debug-next-exception))
 
 (defslimefn sldb-out [_]
-  (throw core/debug-finish-exception))
+  (throw debug-finish-exception))
+
+(defmethod debugger-exception? :cdt [t]
+  (or (debug-cdt-continue-exception? t) (debug-finish-exception? t)
+      (debug-next-exception? t) (debug-step-exception? t)))
+
+(defmethod handled-exception? :cdt [t]
+  (println "gbjt" t)
+  (cond
+   (core/debug-continue-exception? t)
+   true
+   (debug-step-exception? t)
+   (step)
+   (debug-next-exception? t)
+   (next)
+   (debug-cdt-continue-exception? t)
+   (continue)
+   (debug-finish-exception? t)
+   (finish)))
 
 
 (backend-init)
