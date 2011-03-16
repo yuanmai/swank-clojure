@@ -69,12 +69,23 @@
   {:thread (.uniqueID (cdt/get-thread e))
    :env (get-env e)})
 
-(defn default-handler [e]
-  (when-not @control-thread
-    (set-control-thread))
+(defonce exception-events (atom #{}))
+
+(defn- send-to-control-thread [e]
   (mb/send @control-thread
            `(:dbe-rex ~(pr-str `(swank.core.cdt-backends/sldb-cdt-debug
                                  ~(event-data e))) true)))
+
+(defn default-handler [e]
+  (when-not @control-thread
+    (set-control-thread))
+  (if-not (exception-event? e)
+    (send-to-control-thread e)
+    (if (@exception-events (.exception e))
+      (cdt/continue-thread (cdt/get-thread e))
+      (do
+        (swap! exception-events conj (.exception e))
+        (send-to-control-thread e)))))
 
 (defn display-background-msg [s]
   (mb/send @control-thread (list :eval-no-wait "slime-message" (list "%s" s))))

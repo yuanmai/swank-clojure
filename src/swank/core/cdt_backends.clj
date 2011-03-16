@@ -38,17 +38,18 @@
            (:env *debugger-env*))
 
 (defmethod calculate-restarts :cdt [_]
-           (let [quit-exception (cutils/get-quit-exception)
-                 restarts [(core/make-restart :quit "QUIT"
-                                              "Quit to the SLIME top level"
-                                     (fn [] (throw quit-exception)))]
-        restarts (core/add-restart-if
-                  (pos? core/*sldb-level*)
-                  restarts
-                  :abort "ABORT" (str "ABORT to SLIME level "
-                                      (dec core/*sldb-level*))
-                  (fn [] (throw core/debug-abort-exception)))]
-    (into (array-map) restarts)))
+   (let [quit-exception (cutils/get-quit-exception)
+         restarts
+         [(core/make-restart :quit "QUIT"
+                             "Quit to the SLIME top level"
+                             #(throw cutils/debug-cdt-continue-exception))]
+         restarts (core/add-restart-if
+                   (pos? core/*sldb-level*)
+                   restarts
+                   :abort "ABORT" (str "ABORT to SLIME level "
+                                       (dec core/*sldb-level*))
+                   (fn [] (throw core/debug-abort-exception)))]
+     (into (array-map) restarts)))
 
 (defmethod build-backtrace :cdt [start end]
            (doall (take (- end start)
