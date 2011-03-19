@@ -79,7 +79,7 @@
 (defn default-handler [e]
   (when-not @control-thread
     (set-control-thread))
-  (if-not (exception-event? e)
+  (if-not (cdt/exception-event? e)
     (send-to-control-thread e)
     (if (@exception-events (.exception e))
       (cdt/continue-thread (cdt/get-thread e))

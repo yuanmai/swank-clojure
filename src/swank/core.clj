@@ -386,6 +386,7 @@ values."
 
          (= action :emacs-interrupt)
          (let [[thread & args] args]
+           (force-continue)
            (dosync
             (cond
              (and (true? thread) (seq @active-threads))

@@ -7,7 +7,14 @@
   (:use swank.core.debugger-backends
         [swank.commands :only [defslimefn]]))
 
+(defmethod force-continue :cdt []
+           (.deleteEventRequests
+            (.eventRequestManager (cdt/vm))
+            (.exceptionRequests (.eventRequestManager (cdt/vm))))
+           (cdt/continue-vm))
+
 (defn backend-init []
+  (reset! dispatch-val :cdt)
   (cdt/cdt-attach-pid)
   (cdt/set-handler cdt/exception-handler cutils/default-handler)
   (cdt/set-handler cdt/breakpoint-handler cutils/default-handler)
@@ -15,7 +22,14 @@
   (cdt/create-thread-start-request)
   (reset! cdt/CDT-DISPLAY-MSG cutils/display-background-msg)
   (cutils/set-control-thread)
-  (cutils/set-system-thread-groups))
+  (cutils/set-system-thread-groups)
+
+  ;; this invocation of force-continue is only needed to force the loading
+  ;;  of the classes required by force-continue because inadvertently
+  ;;  catching an exception which happens to be in the classloader can cause a
+  ;;  deadlock
+
+  (force-continue))
 
 (defmethod swank-eval :cdt [form]
            (cdt/safe-reval (:thread *debugger-env*)
