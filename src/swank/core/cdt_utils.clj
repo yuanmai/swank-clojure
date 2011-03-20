@@ -24,6 +24,12 @@
   (reset! control-thread
           (get-thread "Swank Control Thread")))
 
+(defn get-control-thread []
+  (when-not @control-thread
+    (Thread/sleep 100)
+    (set-control-thread))
+  @control-thread)
+
 (def system-thread-group-names #{#"JDI main" #"JDI \[\d*\]" #"system"
                                  (re-pattern core/swank-worker-thread-name)})
 (def system-thread-groups (atom []))
@@ -74,13 +80,13 @@
 (defonce exception-events (atom #{}))
 
 (defn- send-to-control-thread [e]
-  (mb/send @control-thread
-           `(:dbe-rex ~(pr-str `(swank.core.cdt-backends/sldb-cdt-debug
+  (mb/send (get-control-thread)
+           ;; pr-str would be better here instead of str, but can
+           ;;  lead to blocking the event handler thread
+           `(:dbe-rex ~(str `(swank.core.cdt-backends/sldb-cdt-debug
                                  ~(event-data e))) true)))
 
 (defn default-handler [e]
-  (when-not @control-thread
-    (set-control-thread))
   (if-not (cdte/exception-event? e)
     (send-to-control-thread e)
     (if (@exception-events (.exception e))
@@ -90,7 +96,8 @@
         (send-to-control-thread e)))))
 
 (defn display-background-msg [s]
-  (mb/send @control-thread (list :eval-no-wait "slime-message" (list "%s" s))))
+  (mb/send (get-control-thread)
+           `(:eval-no-wait "slime-message" ("%s" ~s))))
 
 (defmacro make-debugger-exception [exception-name]
   (let [full-str-name (str "debug-" exception-name "-exception")
