@@ -11,29 +11,6 @@
   (:use swank.core.debugger-backends
         [swank.commands :only [defslimefn]]))
 
-(defmethod force-continue :cdt []
-           (.deleteEventRequests
-            (.eventRequestManager (cdtu/vm))
-            (.exceptionRequests (.eventRequestManager (cdtu/vm))))
-           (cdtu/continue-vm))
-
-(defn backend-init []
-  (reset! dispatch-val :cdt)
-  (cdtc/cdt-attach-pid)
-  (cdte/set-handler cdte/exception-handler cutils/default-handler)
-  (cdte/set-handler cdte/breakpoint-handler cutils/default-handler)
-  (cdte/set-handler cdte/step-handler cutils/default-handler)
-  (cdte/create-thread-start-request)
-  (reset! cdtu/CDT-DISPLAY-MSG cutils/display-background-msg)
-  (cutils/set-control-thread)
-  (cutils/set-system-thread-groups)
-
-  ;; this invocation of force-continue is only needed to force the loading
-  ;;  of the classes required by force-continue because inadvertently
-  ;;  catching an exception which happens to be in the classloader can cause a
-  ;;  deadlock
-
-  (force-continue))
 
 (defmethod swank-eval :cdt [form]
            (cdtr/safe-reval (:thread *debugger-env*)
@@ -139,6 +116,36 @@
            (cdte/set-catch class :all
                         (cutils/get-non-system-threads)
                         (cutils/get-system-thread-groups) true))
+
+(defmethod force-continue :cdt []
+           (.deleteEventRequests
+            (.eventRequestManager (cdtu/vm))
+            (.breakpointRequests (.eventRequestManager (cdtu/vm))))
+           (.deleteEventRequests
+            (.eventRequestManager (cdtu/vm))
+            (.exceptionRequests (.eventRequestManager (cdtu/vm))))
+           (cdtu/continue-vm)
+           (reset! cdte/catch-list nil)
+           (reset! cdte/bp-list nil))
+
+(defn backend-init []
+  (reset! dispatch-val :cdt)
+  (cdtc/cdt-attach-pid)
+  (cdte/set-handler cdte/exception-handler cutils/default-handler)
+  (cdte/set-handler cdte/breakpoint-handler cutils/default-handler)
+  (cdte/set-handler cdte/step-handler cutils/default-handler)
+  (cdte/create-thread-start-request)
+  (reset! cdtu/CDT-DISPLAY-MSG cutils/display-background-msg)
+  (cutils/set-control-thread)
+  (cutils/set-system-thread-groups)
+
+  ;; this invocation of force-continue is only needed to force the loading
+  ;;  of the classes required by force-continue because inadvertently
+  ;;  catching an exception which happens to be in the classloader can cause a
+  ;;  deadlock
+
+  (force-continue))
+
 
 (backend-init)
 
