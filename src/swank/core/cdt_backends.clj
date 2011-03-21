@@ -117,7 +117,7 @@
                         (cutils/get-non-system-threads)
                         (cutils/get-system-thread-groups) true))
 
-(defmethod force-continue :cdt []
+(defmethod handle-interrupt :cdt [_ _ _]
            (.deleteEventRequests
             (.eventRequestManager (cdtu/vm))
             (.breakpointRequests (.eventRequestManager (cdtu/vm))))
@@ -139,12 +139,12 @@
   (cutils/set-control-thread)
   (cutils/set-system-thread-groups)
 
-  ;; this invocation of force-continue is only needed to force the loading
+  ;; this invocation of handle-interrupt is only needed to force the loading
   ;;  of the classes required by force-continue because inadvertently
   ;;  catching an exception which happens to be in the classloader can cause a
   ;;  deadlock
 
-  (force-continue))
+  (handle-interrupt nil nil nil))
 
 
 (backend-init)

@@ -11,16 +11,17 @@
 (defn dbe-dispatch [& args]
   @dispatch-val)
 
-(defmacro def-backend-multimethods [methods]
+(defmacro def-default-backend-multimethods [methods]
   `(do
      ~@(for [m methods]
         `(defmulti ~m get-debugger-backend))))
 
-(def-backend-multimethods
+(def-default-backend-multimethods
   [exception-stacktrace debugger-condition-for-emacs calculate-restarts
    build-backtrace eval-string-in-frame step get-stack-trace
    next finish continue swank-eval handled-exception? debugger-exception?])
 
 (defmulti line-bp dbe-dispatch)
-(defmulti force-continue dbe-dispatch)
 
+(defmulti handle-interrupt
+  (fn [thread _ _] thread))

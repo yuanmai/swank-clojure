@@ -386,12 +386,7 @@ values."
 
          (= action :emacs-interrupt)
          (let [[thread & args] args]
-           (force-continue)
-           (dosync
-            (cond
-             (and (true? thread) (seq @active-threads))
-             (.stop #^Thread (first @active-threads))
-              (= thread :repl-thread) (.stop #^Thread @(conn :repl-thread)))))
+           (handle-interrupt thread conn args))
          :else
          nil))))
 
@@ -421,3 +416,10 @@ values."
 
 (defmethod debugger-exception? :default [t]
            false)
+
+(defmethod handle-interrupt :default [thread conn args]
+           (dosync
+            (cond
+             (and (true? thread) (seq @active-threads))
+             (.stop #^Thread (first @active-threads))
+             (= thread :repl-thread) (.stop #^Thread @(conn :repl-thread)))))
