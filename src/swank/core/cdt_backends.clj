@@ -72,6 +72,10 @@
                         (cutils/get-non-system-threads)
                         (cutils/get-system-thread-groups) true))
 
+(defmacro set-bp [sym]
+  `(cdtb/set-bp-sym '~sym [(cutils/get-non-system-threads)
+                           (cutils/get-system-thread-groups) true]))
+
 (defmethod debugger-exception? :cdt [t]
            (or (cutils/debug-cdt-continue-exception? t)
                (cutils/debug-finish-exception? t)
@@ -125,8 +129,8 @@
             (.eventRequestManager (cdtu/vm))
             (.exceptionRequests (.eventRequestManager (cdtu/vm))))
            (cdtu/continue-vm)
-           (reset! cdte/catch-list nil)
-           (reset! cdte/bp-list nil))
+           (reset! cdte/catch-list {})
+           (reset! cdte/bp-list {}))
 
 (defn backend-init []
   (reset! dispatch-val :cdt)
