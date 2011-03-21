@@ -132,23 +132,31 @@
            (reset! cdte/catch-list {})
            (reset! cdte/bp-list {}))
 
+(defn cdt-started false)
+
 (defn backend-init []
-  (reset! dispatch-val :cdt)
-  (cdtc/cdt-attach-pid)
-  (cdte/set-handler cdte/exception-handler cutils/default-handler)
-  (cdte/set-handler cdte/breakpoint-handler cutils/default-handler)
-  (cdte/set-handler cdte/step-handler cutils/default-handler)
-  (cdte/create-thread-start-request)
-  (reset! cdtu/CDT-DISPLAY-MSG cutils/display-background-msg)
-  (cutils/set-control-thread)
-  (cutils/set-system-thread-groups)
+  (try
+    (reset! cdt-started false)
+    (reset! dispatch-val :cdt)
+    (cdtc/cdt-attach-pid)
+    (cdte/set-handler cdte/exception-handler cutils/default-handler)
+    (cdte/set-handler cdte/breakpoint-handler cutils/default-handler)
+    (cdte/set-handler cdte/step-handler cutils/default-handler)
+    (cdte/create-thread-start-request)
+    (reset! cdtu/CDT-DISPLAY-MSG cutils/display-background-msg)
+    (cutils/set-control-thread)
+    (cutils/set-system-thread-groups)
+    (reset! cdt-started true)
 
   ;; this invocation of handle-interrupt is only needed to force the loading
   ;;  of the classes required by force-continue because inadvertently
   ;;  catching an exception which happens to be in the classloader can cause a
   ;;  deadlock
 
-  (handle-interrupt nil nil nil))
+    (handle-interrupt nil nil nil)
+    (catch Exception e
+      (println "CDT startup failed")
+      (reset cdt-started e))))
 
 
 (backend-init)
