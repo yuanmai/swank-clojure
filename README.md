@@ -11,7 +11,7 @@ from within Emacs.
 If you just want a standalone swank server with no third-party
 libraries, you can just install swank-clojure using Leiningen.
 
-    $ lein plugin install swank-clojure 1.3.0-SNAPSHOT
+    $ lein plugin install swank-clojure 1.3.0
     $ ~/.lein/bin/swank-clojure
 
     M-x slime-connect
