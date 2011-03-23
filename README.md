@@ -20,7 +20,7 @@ If you put ~/.lein/bin on your $PATH it's even more convenient.
 
 You can also start a swank server from inside your project:
 
-    $ lein swank [PORT=4005] [HOST=localhost]
+    $ lein swank # you can specify PORT and HOST optionally
 
 Note that the lein-swank plugin now comes with Swank Clojure; it does
 not need to be specified as a separate dependency any more.
@@ -53,12 +53,14 @@ Install the "slime-repl" package using package.el. If you are using
 Emacs 23, it's best to get [the latest version of package.el from
 Emacs
 trunk](http://bit.ly/pkg-el). Then
-add Technomancy as an archive source:
+add Marmalade as an archive source:
 
     (add-to-list 'package-archives
-                 '("technomancy" . "http://repo.technomancy.us/emacs/") t)
+                 '("marmalade" . "http://marmalade-repo.org/packages/") t)
 
-Then you can do <kbd>M-x package-install</kbd> and choose slime-repl.
+Then you can do <kbd>M-x package-list-packages</kbd>. Go down to
+slime-repl and mark it with <kbd>i</kbd>. Execute the installation by
+pressing <kbd>x</kbd>.
 
 When you perform the installation, you will see warnings related to
 the byte-compilation of the packages. This is **normal**; the packages
@@ -83,6 +85,7 @@ Commonly-used SLIME commands:
 * **C-c TAB**: Autocomplete symbol at point
 * **C-x C-e**: Eval the form under the point
 * **C-c C-k**: Compile the current buffer
+* **C-c C-l**: Load current buffer and force dependent namespaces to reload
 * **M-.**: Jump to the definition of a var
 * **C-c S-i**: Inspect a value
 * **C-c C-m**: Macroexpand the call under the point
@@ -96,9 +99,8 @@ line referenced by that frame if possible.
 
 Note that SLIME was designed to work with Common Lisp, which has a
 distinction between interpreted code and compiled code. Clojure has no
-such distinction, but many of the SLIME commands retain parallel
-load/compile commands that have the same effect in the context of
-Clojure.
+such distinction, so the load-file functionality is overloaded to add
+<code>:reload-all</code> behaviour.
 
 ## Embedding
 
@@ -125,12 +127,8 @@ for an explanation of this excellent feature. Further documentation to come.
 
 Previous versions of Swank Clojure bundled an Elisp library called
 swank-clojure.el that provided ways to launch your swank server from
-within your Emacs process. While swank-clojure is still distributed
-with the project, it's a much more error-prone way of doing things
-than the method outlined above.
-
-If you have configured your Emacs to use M-x swank-clojure-project
-then it should still work, but it's not recommended for new users.
+within your Emacs process. It's much more reliable to launch the
+server from your build tool, so this has been removed.
 
 ## Community
 
@@ -148,7 +146,7 @@ either.
 
 ## License
 
-Copyright (C) 2008-2010 Jeffrey Chu, Phil Hagelberg, Hugo Duncan, and
+Copyright (C) 2008-2011 Jeffrey Chu, Phil Hagelberg, Hugo Duncan, and
 contributors
 
 Licensed under the EPL. (See the file COPYING.)
