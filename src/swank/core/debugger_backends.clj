@@ -2,6 +2,7 @@
   (:refer-clojure :exclude [next]))
 
 (def #^{:dynamic true} *debugger-env* nil)
+(def last-viewed-source (atom nil))
 
 (defn get-debugger-backend [& args]
   (when *debugger-env* :cdt))
@@ -22,6 +23,7 @@
    next finish continue swank-eval handled-exception? debugger-exception?])
 
 (defmulti line-bp dbe-dispatch)
+(defmulti eval-last-frame dbe-dispatch)
 
 (defmulti handle-interrupt
   (fn [thread _ _] thread))

@@ -600,3 +600,6 @@ corresponding attribute values per thread."
 
 (defslimefn quit-thread-browser []
   (reset! thread-list []))
+
+(defslimefn eval-last-frame [st]
+  (dbe/eval-last-frame st))

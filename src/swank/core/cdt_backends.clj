@@ -22,6 +22,9 @@
 
 (defmethod get-stack-trace :cdt [n]
            (reset! (:frame *debugger-env*) n)
+           (reset! last-viewed-source
+                   {:thread (:thread *debugger-env*)
+                    :frame @(:frame *debugger-env*)})
            (nth (get-full-stack-trace) n))
 
 (defmethod exception-stacktrace :cdt [_]
@@ -56,8 +59,15 @@
                   @(:frame *debugger-env*)
                   (read-string string) true identity))
 
+(defmethod eval-last-frame :cdt [form-string]
+           (cdtr/safe-reval
+            (:thread @last-viewed-source)
+            (:frame @last-viewed-source)
+            (read-string form-string) true identity))
+
 (defmacro make-cdt-method [name func]
   `(defmethod ~name :cdt []
+              (reset! last-viewed-source nil)
               (~(ns-resolve (the-ns 'cdt.events) func)
                (:thread *debugger-env*))
               true))
@@ -130,9 +140,10 @@
             (.exceptionRequests (.eventRequestManager (cdtu/vm))))
            (cdtu/continue-vm)
            (reset! cdte/catch-list {})
-           (reset! cdte/bp-list {}))
+           (reset! cdte/bp-list {})
+           (println "Clearing CDT event requests and continuing"))
 
-(defn cdt-started false)
+(def cdt-started (atom false))
 
 (defn backend-init []
   (try
@@ -153,10 +164,10 @@
   ;;  catching an exception which happens to be in the classloader can cause a
   ;;  deadlock
 
-    (handle-interrupt nil nil nil)
+    (handle-interrupt :cdt nil nil)
     (catch Exception e
       (println "CDT startup failed")
-      (reset cdt-started e))))
+      (reset! cdt-started e))))
 
 
 (backend-init)
