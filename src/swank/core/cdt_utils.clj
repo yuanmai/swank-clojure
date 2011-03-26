@@ -72,7 +72,7 @@
     (gen-env-list e exception-text)))
 
 (defn- event-data [e]
-  {:thread (.uniqueID (cdt/get-thread-from-event))
+  {:thread (.uniqueID (cdt/get-thread-from-event e))
    :env (get-env e)})
 
 (defonce exception-events (atom #{}))

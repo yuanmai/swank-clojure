@@ -147,16 +147,20 @@
 (defn backend-init []
   (try
     (reset! cdt-started false)
-    (reset! dispatch-val :cdt)
     (cdt/cdt-attach-pid)
+    (cdt/create-thread-start-request)
+    (reset! dispatch-val :cdt)
+
+    ;; classloader exceptions often cause deadlocks and are almost
+    ;; never interesting so filter them out
+    (cdt/set-catch-exclusion-filter-strings
+     "java.net.URLClassLoader*" "java.lang.ClassLoader*")
     (cdt/set-handler cdt/exception-handler cutils/default-handler)
     (cdt/set-handler cdt/breakpoint-handler cutils/default-handler)
     (cdt/set-handler cdt/step-handler cutils/default-handler)
-    (cdt/create-thread-start-request)
-    (reset! cdt/CDT-DISPLAY-MSG cutils/display-background-msg)
+    (cdt/set-display-msg cutils/display-background-msg)
     (cutils/set-control-thread)
     (cutils/set-system-thread-groups)
-    (reset! cdt-started true)
 
   ;; this invocation of handle-interrupt is only needed to force the loading
   ;;  of the classes required by force-continue because inadvertently
@@ -164,6 +168,7 @@
   ;;  deadlock
 
     (handle-interrupt :cdt nil nil)
+    (reset! cdt-started true)
     (catch Exception e
       (println "CDT startup failed")
       (reset! cdt-started e))))
