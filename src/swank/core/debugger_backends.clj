@@ -1,11 +1,11 @@
 (ns swank.core.debugger-backends
   (:refer-clojure :exclude [next]))
 
-(def #^{:dynamic true} *debugger-env* nil)
+(def #^{:dynamic true} *debugger-env* (atom nil))
 (def last-viewed-source (atom nil))
 
 (defn get-debugger-backend [& args]
-  (when *debugger-env* :cdt))
+  (when @*debugger-env* :cdt))
 
 (def dispatch-val (atom :default))
 

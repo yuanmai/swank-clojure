@@ -1,10 +1,6 @@
 (ns swank.core.cdt-backends
   (:refer-clojure :exclude [next])
-  (:require [cdt.core :as cdtc]
-            [cdt.utils :as cdtu]
-            [cdt.events :as cdte]
-            [cdt.reval :as cdtr]
-            [cdt.break :as cdtb]
+  (:require [cdt.core :as cdt]
             [swank.core.cdt-utils :as cutils]
             [swank.core :as core]
             [swank.util.concurrent.thread :as st])
@@ -13,18 +9,17 @@
 
 
 (defmethod swank-eval :cdt [form]
-           (cdtr/safe-reval (:thread *debugger-env*)
-                           @(:frame *debugger-env*) form true identity))
+           (cdt/safe-reval (:thread @*debugger-env*)
+                           (:frame @*debugger-env*) form true identity))
 
 (defn- get-full-stack-trace []
    (.getStackTrace (cutils/get-thread #_(.getName @control-thread)
-                               (.name (:thread *debugger-env*)))))
+                               (.name (:thread @*debugger-env*)))))
 
 (defmethod get-stack-trace :cdt [n]
-           (reset! (:frame *debugger-env*) n)
+           (swap! *debugger-env* assoc :frame n)
            (reset! last-viewed-source
-                   {:thread (:thread *debugger-env*)
-                    :frame @(:frame *debugger-env*)})
+                   (select-keys @*debugger-env* [:thread :frame]))
            (nth (get-full-stack-trace) n))
 
 (defmethod exception-stacktrace :cdt [_]
@@ -33,7 +28,7 @@
                 (map str (get-full-stack-trace))))
 
 (defmethod debugger-condition-for-emacs :cdt []
-           (:env *debugger-env*))
+           (:env @*debugger-env*))
 
 (defmethod calculate-restarts :cdt [_]
    (let [quit-exception (cutils/get-quit-exception)
@@ -54,22 +49,25 @@
                         (drop start (exception-stacktrace nil)))))
 
 (defmethod eval-string-in-frame :cdt [string n]
-  (reset! (:frame *debugger-env*) n)
-  (cdtr/safe-reval (:thread *debugger-env*)
-                  @(:frame *debugger-env*)
-                  (read-string string) true identity))
+  (swap! *debugger-env* assoc :frame n)
+  (cdt/safe-reval (:thread @*debugger-env*)
+                   (:frame @*debugger-env*)
+                   (read-string string) true identity))
 
 (defmethod eval-last-frame :cdt [form-string]
-           (cdtr/safe-reval
+           (cdt/safe-reval
             (:thread @last-viewed-source)
             (:frame @last-viewed-source)
             (read-string form-string) true identity))
 
+(defn- reset-last-viewed-source []
+  (reset! last-viewed-source (atom nil)))
+
 (defmacro make-cdt-method [name func]
   `(defmethod ~name :cdt []
-              (reset! last-viewed-source nil)
-              (~(ns-resolve (the-ns 'cdt.events) func)
-               (:thread *debugger-env*))
+              (reset-last-viewed-source)
+              (~(ns-resolve (the-ns 'cdt.core) func)
+               (:thread @*debugger-env*))
               true))
 
 (make-cdt-method step step)
@@ -78,12 +76,12 @@
 (make-cdt-method continue continue-thread)
 
 (defmethod line-bp :cdt [file line]
-           (cdtb/line-bp file line
+           (cdt/line-bp file line
                         (cutils/get-non-system-threads)
                         (cutils/get-system-thread-groups) true))
 
 (defmacro set-bp [sym]
-  `(cdtb/set-bp-sym '~sym [(cutils/get-non-system-threads)
+  `(cdt/set-bp-sym '~sym [(cutils/get-non-system-threads)
                            (cutils/get-system-thread-groups) true]))
 
 (defmethod debugger-exception? :cdt [t]
@@ -106,9 +104,9 @@
    (finish)))
 
 (defn- gen-debugger-env [env]
-  {:env (:env env)
-   :thread (cdte/get-thread-from-id (:thread env))
-   :frame (atom 0)})
+  (atom {:env (:env env)
+         :thread (cdt/get-thread-from-id (:thread env))
+         :frame 0}))
 
 (defslimefn sldb-cdt-debug [env]
   (binding [*debugger-env* (gen-debugger-env env)]
@@ -127,20 +125,21 @@
   (throw cutils/debug-finish-exception))
 
 (defn set-catch [class]
-           (cdte/set-catch class :all
+           (cdt/set-catch class :all
                         (cutils/get-non-system-threads)
                         (cutils/get-system-thread-groups) true))
 
 (defmethod handle-interrupt :cdt [_ _ _]
            (.deleteEventRequests
-            (.eventRequestManager (cdtu/vm))
-            (.breakpointRequests (.eventRequestManager (cdtu/vm))))
+            (.eventRequestManager (cdt/vm))
+            (.breakpointRequests (.eventRequestManager (cdt/vm))))
            (.deleteEventRequests
-            (.eventRequestManager (cdtu/vm))
-            (.exceptionRequests (.eventRequestManager (cdtu/vm))))
-           (cdtu/continue-vm)
-           (reset! cdte/catch-list {})
-           (reset! cdte/bp-list {})
+            (.eventRequestManager (cdt/vm))
+            (.exceptionRequests (.eventRequestManager (cdt/vm))))
+           (cdt/continue-vm)
+           (reset! cdt/catch-list {})
+           (reset! cdt/bp-list {})
+           (reset-last-viewed-source)
            (println "Clearing CDT event requests and continuing"))
 
 (def cdt-started (atom false))
@@ -149,12 +148,12 @@
   (try
     (reset! cdt-started false)
     (reset! dispatch-val :cdt)
-    (cdtc/cdt-attach-pid)
-    (cdte/set-handler cdte/exception-handler cutils/default-handler)
-    (cdte/set-handler cdte/breakpoint-handler cutils/default-handler)
-    (cdte/set-handler cdte/step-handler cutils/default-handler)
-    (cdte/create-thread-start-request)
-    (reset! cdtu/CDT-DISPLAY-MSG cutils/display-background-msg)
+    (cdt/cdt-attach-pid)
+    (cdt/set-handler cdt/exception-handler cutils/default-handler)
+    (cdt/set-handler cdt/breakpoint-handler cutils/default-handler)
+    (cdt/set-handler cdt/step-handler cutils/default-handler)
+    (cdt/create-thread-start-request)
+    (reset! cdt/CDT-DISPLAY-MSG cutils/display-background-msg)
     (cutils/set-control-thread)
     (cutils/set-system-thread-groups)
     (reset! cdt-started true)

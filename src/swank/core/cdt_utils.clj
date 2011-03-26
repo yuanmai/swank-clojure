@@ -1,8 +1,6 @@
 (ns swank.core.cdt-utils
   (:refer-clojure :exclude [next])
-  (:require [cdt.core :as cdtc]
-            [cdt.utils :as cdtu]
-            [cdt.events :as cdte]
+  (:require [cdt.core :as cdt]
             [swank.util.concurrent.mbox :as mb]
             [swank.core :as core])
   (:use swank.core.debugger-backends))
@@ -39,7 +37,7 @@
 (defn set-system-thread-groups []
   (reset! system-thread-groups
           (filter system-thread-group?
-                  (cdtu/all-thread-groups))))
+                  (cdt/all-thread-groups))))
 
 (defn get-system-thread-groups [] @system-thread-groups)
 
@@ -51,10 +49,10 @@
   (some #(re-find % (.name t)) system-thread-names))
 
 (defn get-system-threads []
-  (filter system-thread? (cdtu/list-threads)))
+  (filter system-thread? (cdt/list-threads)))
 
 (defn get-non-system-threads []
-  (remove system-thread? (cdtu/list-threads)))
+  (remove system-thread? (cdt/list-threads)))
 
 (def bp-text (str "From here you can: "
                   "e/eval, v/show source, s/step, x/next, o/exit func"))
@@ -74,7 +72,7 @@
     (gen-env-list e exception-text)))
 
 (defn- event-data [e]
-  {:thread (.uniqueID (cdte/get-thread e))
+  {:thread (.uniqueID (cdt/get-thread-from-evente))
    :env (get-env e)})
 
 (defonce exception-events (atom #{}))
@@ -87,10 +85,10 @@
                                  ~(event-data e))) true)))
 
 (defn default-handler [e]
-  (if-not (cdte/exception-event? e)
+  (if-not (cdt/exception-event? e)
     (send-to-control-thread e)
     (if (@exception-events (.exception e))
-      (cdtu/continue-thread (cdte/get-thread e))
+      (cdt/continue-thread (cdt/get-thread-from-event e))
       (do
         (swap! exception-events conj (.exception e))
         (send-to-control-thread e)))))
@@ -115,7 +113,7 @@
 (make-debugger-exception cdt-continue)
 
 (defn- exception? []
-  (.startsWith (first (:env *debugger-env*)) "CDT Exception"))
+  (.startsWith (first (:env @*debugger-env*)) "CDT Exception"))
 
 (defn get-quit-exception []
   (if (exception?)
