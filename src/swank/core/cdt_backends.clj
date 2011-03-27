@@ -1,6 +1,6 @@
 (ns swank.core.cdt-backends
   (:refer-clojure :exclude [next])
-  (:require [cdt.core :as cdt]
+  (:require [cdt.ui :as cdt]
             [swank.core.cdt-utils :as cutils]
             [swank.core :as core]
             [swank.util.concurrent.thread :as st])
@@ -73,7 +73,7 @@
 (defmacro make-cdt-method [name func]
   `(defmethod ~name :cdt []
               (reset-last-viewed-source)
-              (~(ns-resolve (the-ns 'cdt.core) func)
+              (~(ns-resolve (the-ns 'cdt.ui) func)
                (:thread @*debugger-env*))
               true))
 

@@ -1,6 +1,6 @@
 (ns swank.core.cdt-utils
   (:refer-clojure :exclude [next])
-  (:require [cdt.core :as cdt]
+  (:require [cdt.ui :as cdt]
             [swank.util.concurrent.mbox :as mb]
             [swank.core :as core])
   (:use swank.core.debugger-backends))

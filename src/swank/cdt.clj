@@ -1,7 +1,7 @@
 (ns swank.cdt
   ;; convenience namespace to give users easy access to main functions
   (:refer-clojure :exclude [next])
-  (:require [cdt.core :as cdt]
+  (:require [cdt.ui :as cdt]
             [swank.core.cdt-utils :as cutils]
             [swank.core.cdt-backends :as cbackends]))
 
