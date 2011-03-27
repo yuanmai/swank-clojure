@@ -84,7 +84,7 @@
 
 (defonce cdt-started-promise (promise))
 
-(defn wait-till-cdt-started []
+(defn- wait-till-cdt-started []
   (try
     (.get (future (and @cdt-started-promise (cdt/event-handler-started?)))
           5000 TimeUnit/MILLISECONDS)
