@@ -10,7 +10,7 @@
 
 (ns swank.swank
   (:use [swank.core]
-        [swank.core connection server cdt-backends]
+        [swank.core connection server]
         [swank.util.concurrent thread]
         [swank.util.net sockets]
         [clojure.main :only [repl]])
