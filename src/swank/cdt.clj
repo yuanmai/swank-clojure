@@ -4,7 +4,7 @@
   (:require [cdt.ui :as cdt]
             [swank.core.cdt-backends :as cbackends]))
 
-(def swank-cdt-release "1.3.1a")
+(def swank-cdt-release "1.3.1b")
 
 (cdt/expose cbackends/set-catch cbackends/set-bp cbackends/reval
             cdt/delete-catch cdt/delete-bp cdt/delete-all-breakpoints
