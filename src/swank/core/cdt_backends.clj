@@ -10,72 +10,72 @@
 
 
 (defmethod swank-eval :cdt [form]
-           (cdt/safe-reval (:thread @*debugger-env*)
-                           (:frame @*debugger-env*) form true identity))
+  (cdt/safe-reval (:thread @*debugger-env*)
+                  (:frame @*debugger-env*) form true identity))
 
 (defn- get-full-stack-trace []
-   (.getStackTrace (cutils/get-thread #_(.getName @control-thread)
-                               (.name (:thread @*debugger-env*)))))
+  (.getStackTrace (cutils/get-thread #_(.getName @control-thread)
+                                     (.name (:thread @*debugger-env*)))))
 
 (defmethod get-stack-trace :cdt [n]
-           (swap! *debugger-env* assoc :frame n)
-           (reset! last-viewed-source
-                   (select-keys @*debugger-env* [:thread :frame]))
-           (nth (get-full-stack-trace) n))
+  (swap! *debugger-env* assoc :frame n)
+  (reset! last-viewed-source
+          (select-keys @*debugger-env* [:thread :frame]))
+  (nth (get-full-stack-trace) n))
 
 (defmethod exception-stacktrace :cdt [_]
-           (map #(list %1 %2 '(:restartable nil))
-                (iterate inc 0)
-                (map str (get-full-stack-trace))))
+  (map #(list %1 %2 '(:restartable nil))
+       (iterate inc 0)
+       (map str (get-full-stack-trace))))
 
 (defmethod debugger-condition-for-emacs :cdt []
-           (:env @*debugger-env*))
+  (:env @*debugger-env*))
 
 (defmethod calculate-restarts :cdt [_]
-   (let [quit-exception (cutils/get-quit-exception)
-         restarts
-         [(core/make-restart :quit "QUIT"
-                             "Quit to the SLIME top level"
-                             #(throw cutils/debug-cdt-continue-exception))]
-         restarts (core/add-restart-if
-                   (pos? core/*sldb-level*)
-                   restarts
-                   :abort "ABORT" (str "ABORT to SLIME level "
-                                       (dec core/*sldb-level*))
-                   (fn [] (throw core/debug-abort-exception)))]
-     (into (array-map) restarts)))
+  (let [quit-exception (cutils/get-quit-exception)
+        restarts
+        [(core/make-restart :quit "QUIT"
+                            "Quit to the SLIME top level"
+                            #(throw cutils/debug-cdt-continue-exception))]
+        restarts (core/add-restart-if
+                  (pos? core/*sldb-level*)
+                  restarts
+                  :abort "ABORT" (str "ABORT to SLIME level "
+                                      (dec core/*sldb-level*))
+                  (fn [] (throw core/debug-abort-exception)))]
+    (into (array-map) restarts)))
 
 (defmethod build-backtrace :cdt [start end]
-           (doall (take (- end start)
-                        (drop start (exception-stacktrace nil)))))
+  (doall (take (- end start)
+               (drop start (exception-stacktrace nil)))))
 
 (defmethod eval-string-in-frame :cdt [string n]
   (swap! *debugger-env* assoc :frame n)
   (cdt/safe-reval (:thread @*debugger-env*)
-                   (:frame @*debugger-env*)
-                   (read-string string) true identity))
+                  (:frame @*debugger-env*)
+                  (read-string string) true identity))
 
 (defmethod eval-last-frame :cdt [form-string]
-           (cdt/safe-reval
-            (:thread @last-viewed-source)
-            (:frame @last-viewed-source)
-            (read-string form-string) true identity))
+  (cdt/safe-reval
+   (:thread @last-viewed-source)
+   (:frame @last-viewed-source)
+   (read-string form-string) true identity))
 
 (defmacro reval [form]
-           `(cdt/safe-reval
-             (:thread @last-viewed-source)
-             (:frame @last-viewed-source)
-             '~form true read-string))
+  `(cdt/safe-reval
+    (:thread @last-viewed-source)
+    (:frame @last-viewed-source)
+    '~form true read-string))
 
 (defn- reset-last-viewed-source []
   (reset! last-viewed-source (atom nil)))
 
 (defmacro make-cdt-method [name func]
   `(defmethod ~name :cdt []
-              (reset-last-viewed-source)
-              (~(ns-resolve (the-ns 'cdt.ui) func)
-               (:thread @*debugger-env*))
-              true))
+     (reset-last-viewed-source)
+     (~(ns-resolve (the-ns 'cdt.ui) func)
+      (:thread @*debugger-env*))
+     true))
 
 (make-cdt-method step step)
 (make-cdt-method next step-over)
@@ -93,22 +93,22 @@
               (str "CDT failed to start.  Check for errors on stdout"))))))
 
 (defmethod line-bp :cdt [file line]
-           (wait-till-cdt-started)
-           (cdt/line-bp file line
-                        (cutils/get-non-system-threads)
-                        (cutils/get-system-thread-groups) true))
+  (wait-till-cdt-started)
+  (cdt/line-bp file line
+               (cutils/get-non-system-threads)
+               (cutils/get-system-thread-groups) true))
 
 (defmacro set-bp [sym]
   `(do
      (wait-till-cdt-started)
      (cdt/set-bp-sym '~sym [(cutils/get-non-system-threads)
-                             (cutils/get-system-thread-groups) true])))
+                            (cutils/get-system-thread-groups) true])))
 
 (defmethod debugger-exception? :cdt [t]
-           (or (cutils/debug-cdt-continue-exception? t)
-               (cutils/debug-finish-exception? t)
-               (cutils/debug-next-exception? t)
-               (cutils/debug-step-exception? t)))
+  (or (cutils/debug-cdt-continue-exception? t)
+      (cutils/debug-finish-exception? t)
+      (cutils/debug-next-exception? t)
+      (cutils/debug-step-exception? t)))
 
 (defmethod handled-exception? :cdt [t]
   (cond
@@ -151,18 +151,18 @@
                  (cutils/get-system-thread-groups) true))
 
 (defmethod handle-interrupt :cdt [_ _ _]
-           (.deleteEventRequests
-            (.eventRequestManager (cdt/vm))
-            (.breakpointRequests (.eventRequestManager (cdt/vm))))
-           (.deleteEventRequests
-            (.eventRequestManager (cdt/vm))
-            (.exceptionRequests (.eventRequestManager (cdt/vm))))
-           (cdt/continue-vm)
-           (reset! cdt/catch-list {})
-           (reset! cdt/bp-list {})
-           (reset-last-viewed-source)
-           (doseq [f [cutils/display-background-msg println]]
-               (f "Clearing CDT event requests and continuing.")))
+  (.deleteEventRequests
+   (.eventRequestManager (cdt/vm))
+   (.breakpointRequests (.eventRequestManager (cdt/vm))))
+  (.deleteEventRequests
+   (.eventRequestManager (cdt/vm))
+   (.exceptionRequests (.eventRequestManager (cdt/vm))))
+  (cdt/continue-vm)
+  (reset! cdt/catch-list {})
+  (reset! cdt/bp-list {})
+  (reset-last-viewed-source)
+  (doseq [f [cutils/display-background-msg println]]
+    (f "Clearing CDT event requests and continuing.")))
 
 (defn cdt-backend-init []
   (try
@@ -181,10 +181,10 @@
     (cutils/set-control-thread)
     (cutils/set-system-thread-groups)
 
-  ;; this invocation of handle-interrupt is only needed to force the loading
-  ;;  of the classes required by force-continue because inadvertently
-  ;;  catching an exception which happens to be in the classloader can cause a
-  ;;  deadlock
+    ;; this invocation of handle-interrupt is only needed to force the loading
+    ;;  of the classes required by force-continue because inadvertently
+    ;;  catching an exception which happens to be in the classloader can cause a
+    ;;  deadlock
 
     (handle-interrupt :cdt nil nil)
     (deliver cdt-started-promise true)
