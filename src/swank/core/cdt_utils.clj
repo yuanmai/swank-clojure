@@ -60,7 +60,10 @@
 (def exception-text "From here you can: e/eval, v/show source")
 
 (defn- gen-env-list [e text]
-  (list (str "CDT " e) text  '((:show-frame-source 0))))
+  (let [[_ s1 _ s2]
+        (re-find #"(.*)(@.* )(in thread.*)" (str e))]
+    (list (str "CDT " s1 " " s2) text
+          '((:show-frame-source 0)))))
 
 (defn- get-env [e]
   (condp = (second (re-find #"^(.*)Event@" (str e)))

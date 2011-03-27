@@ -5,7 +5,8 @@
             [swank.core :as core]
             [swank.util.concurrent.thread :as st])
   (:use swank.core.debugger-backends
-        [swank.commands :only [defslimefn]]))
+        [swank.commands :only [defslimefn]])
+  (:import java.util.concurrent.TimeUnit))
 
 
 (defmethod swank-eval :cdt [form]
@@ -60,6 +61,12 @@
             (:frame @last-viewed-source)
             (read-string form-string) true identity))
 
+(defmacro reval [form]
+           `(cdt/safe-reval
+             (:thread @last-viewed-source)
+             (:frame @last-viewed-source)
+             '~form true read-string))
+
 (defn- reset-last-viewed-source []
   (reset! last-viewed-source (atom nil)))
 
@@ -75,14 +82,27 @@
 (make-cdt-method finish finish)
 (make-cdt-method continue continue-thread)
 
+(defonce cdt-started-promise (promise))
+
+(defn wait-till-cdt-started []
+  (try
+    (.get (future (and @cdt-started-promise (cdt/event-handler-started?)))
+          5000 TimeUnit/MILLISECONDS)
+    (catch Exception e
+      (throw (IllegalStateException.
+              (str "CDT failed to start.  Check for errors on stdout"))))))
+
 (defmethod line-bp :cdt [file line]
+           (wait-till-cdt-started)
            (cdt/line-bp file line
                         (cutils/get-non-system-threads)
                         (cutils/get-system-thread-groups) true))
 
 (defmacro set-bp [sym]
-  `(cdt/set-bp-sym '~sym [(cutils/get-non-system-threads)
-                           (cutils/get-system-thread-groups) true]))
+  `(do
+     (wait-till-cdt-started)
+     (cdt/set-bp-sym '~sym [(cutils/get-non-system-threads)
+                             (cutils/get-system-thread-groups) true])))
 
 (defmethod debugger-exception? :cdt [t]
            (or (cutils/debug-cdt-continue-exception? t)
@@ -125,9 +145,10 @@
   (throw cutils/debug-finish-exception))
 
 (defn set-catch [class]
-           (cdt/set-catch class :all
-                        (cutils/get-non-system-threads)
-                        (cutils/get-system-thread-groups) true))
+  (wait-till-cdt-started)
+  (cdt/set-catch class :all
+                 (cutils/get-non-system-threads)
+                 (cutils/get-system-thread-groups) true))
 
 (defmethod handle-interrupt :cdt [_ _ _]
            (.deleteEventRequests
@@ -140,13 +161,11 @@
            (reset! cdt/catch-list {})
            (reset! cdt/bp-list {})
            (reset-last-viewed-source)
-           (println "Clearing CDT event requests and continuing"))
+           (doseq [f [cutils/display-background-msg println]]
+               (f "Clearing CDT event requests and continuing.")))
 
-(def cdt-started (atom false))
-
-(defn backend-init []
+(defn cdt-backend-init []
   (try
-    (reset! cdt-started false)
     (cdt/cdt-attach-pid)
     (cdt/create-thread-start-request)
     (reset! dispatch-val :cdt)
@@ -154,7 +173,7 @@
     ;; classloader exceptions often cause deadlocks and are almost
     ;; never interesting so filter them out
     (cdt/set-catch-exclusion-filter-strings
-     "java.net.URLClassLoader*" "java.lang.ClassLoader*")
+     "java.net.URLClassLoader*" "java.lang.ClassLoader*" "*ClassLoader.java")
     (cdt/set-handler cdt/exception-handler cutils/default-handler)
     (cdt/set-handler cdt/breakpoint-handler cutils/default-handler)
     (cdt/set-handler cdt/step-handler cutils/default-handler)
@@ -168,11 +187,7 @@
   ;;  deadlock
 
     (handle-interrupt :cdt nil nil)
-    (reset! cdt-started true)
+    (deliver cdt-started-promise true)
     (catch Exception e
-      (println "CDT startup failed")
-      (reset! cdt-started e))))
-
-
-(backend-init)
+      (println "CDT startup failed " e))))
 

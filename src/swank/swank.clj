@@ -10,7 +10,7 @@
 
 (ns swank.swank
   (:use [swank.core]
-        [swank.core connection server]
+        [swank.core connection server cdt-backends]
         [swank.util.concurrent thread]
         [swank.util.net sockets]
         [clojure.main :only [repl]])
@@ -55,7 +55,7 @@
    PORT-FILE. This is the entry point for Emacs."
   [port-file & opts]
   (let [opts (apply hash-map opts)]
-    (.start (Thread. #(require 'swank.core.cdt-backends)))
+    (.start (Thread. #(cdt-backend-init)))
     (setup-server (get opts :port 0)
                   (fn announce-port [port]
                     (announce-port-to-file port-file port)
