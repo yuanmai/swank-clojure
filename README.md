@@ -52,7 +52,7 @@ slime repl:
 Install the "slime-repl" package using package.el. If you are using
 Emacs 23, it's best to get [the latest version of package.el from
 Emacs
-trunk](http://bit.ly/pkg-el). Then
+trunk](http://bit.ly/pkg-el23). Then
 add Marmalade as an archive source:
 
     (add-to-list 'package-archives
@@ -92,6 +92,7 @@ Commonly-used SLIME commands:
 * **C-c C-d C-d**: Look up documentation for a var
 * **C-c C-z**: Switch from a Clojure buffer to the repl buffer
 * **C-c M-p**: Switch the repl namespace to match the current buffer
+* **C-c C-c**: Interrupt the current function call in the repl
 * **C-c C-w c**: List all callers of a given function
 
 Pressing "v" on a stack trace a debug buffer will jump to the file and
