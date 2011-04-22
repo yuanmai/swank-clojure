@@ -150,6 +150,10 @@
                  (cutils/get-non-system-threads)
                  (cutils/get-system-thread-groups) true))
 
+(defn display-msg [msg]
+  (doseq [f [cutils/display-background-msg println]]
+    (f msg)))
+
 (defmethod handle-interrupt :cdt [_ _ _]
   (.deleteEventRequests
    (.eventRequestManager (cdt/vm))
@@ -161,8 +165,7 @@
   (reset! cdt/catch-list {})
   (reset! cdt/bp-list {})
   (reset-last-viewed-source)
-  (doseq [f [cutils/display-background-msg println]]
-    (f "Clearing CDT event requests and continuing.")))
+  (display-msg "Clearing CDT event requests and continuing."))
 
 (defn cdt-backend-init []
   (try
@@ -188,6 +191,6 @@
 
     (handle-interrupt :cdt nil nil)
     (deliver cdt-started-promise true)
+    (display-msg "Swank CDT Started")
     (catch Exception e
       (println "CDT startup failed " e))))
-
