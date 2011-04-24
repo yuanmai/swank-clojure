@@ -167,7 +167,7 @@
   (reset-last-viewed-source)
   (display-msg "Clearing CDT event requests and continuing."))
 
-(defn cdt-backend-init []
+(defn cdt-backend-init [release]
   (try
     (cdt/cdt-attach-pid)
     (cdt/create-thread-start-request)
@@ -183,7 +183,7 @@
     (cdt/set-display-msg cutils/display-background-msg)
     (cutils/set-control-thread)
     (cutils/set-system-thread-groups)
-
+    (cutils/init-emacs-helper-functions)
     ;; this invocation of handle-interrupt is only needed to force the loading
     ;;  of the classes required by force-continue because inadvertently
     ;;  catching an exception which happens to be in the classloader can cause a
@@ -191,6 +191,6 @@
 
     (handle-interrupt :cdt nil nil)
     (deliver cdt-started-promise true)
-    (display-msg "Swank CDT Started")
+    (display-msg (str "Swank CDT release " release " started" ))
     (catch Exception e
-      (println "CDT startup failed " e))))
+      (println "CDT " release "startup failed: " e))))
