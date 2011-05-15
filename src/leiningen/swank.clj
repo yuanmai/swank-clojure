@@ -20,8 +20,7 @@
                                  [:host host]))
      ;; This exits immediately when using :eval-in-leiningen; must block
      (when ~(:eval-in-leiningen project)
-       (doseq [t# ((ns-resolve '~'swank.commands.basic
-                               '~'get-thread-list))]
+       (doseq [t# ((ns-resolve '~'swank.commands.basic '~'get-thread-list))]
          (.join t#)))))
 
 (defn swank

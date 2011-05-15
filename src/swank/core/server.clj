@@ -91,12 +91,4 @@
 
 ;; Announcement functions
 (defn simple-announce [port]
-  (println "Connection opened on local port " port))
-
-(defn announce-port-to-file
-  "Writes the given port number into a file."
-  ([#^String file port]
-     (with-open [out (new java.io.FileWriter file)]
-       (doto out
-         (.write (str port "\n"))
-         (.flush)))))
+  (println "Connection opened on local port" port))

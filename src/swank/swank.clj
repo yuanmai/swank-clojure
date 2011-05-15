@@ -60,14 +60,12 @@
 (defn start-server
   "Start the server and write the listen port number to
    PORT-FILE. This is the entry point for Emacs."
-  [port-file & opts]
+  [& opts]
   (let [opts (apply hash-map opts)]
     (when (:load-cdt-on-startup opts)
       (load-cdt-with-dynamic-classloader))
     (setup-server (get opts :port 0)
-                  (fn announce-port [port]
-                    (announce-port-to-file port-file port)
-                    (simple-announce port))
+                  simple-announce
                   connection-serve
                   opts)))
 
@@ -91,11 +89,7 @@
        (repl :read (fn [rprompt rexit]
                      (if @stop rexit
                          (do (reset! stop true)
-                             `(start-server (-> "java.io.tmpdir"
-                                                (System/getProperty)
-                                                (File. "slime-port.txt")
-                                                (.getCanonicalPath))
-                                            ~@(apply concat opts)))))
+                             `(start-server ~@(apply concat opts)))))
              :need-prompt (constantly false))))
   ([] (start-repl 4005)))
 
