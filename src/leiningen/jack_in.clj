@@ -1,12 +1,25 @@
 (ns leiningen.jack-in
   (:use [leiningen.compile :only [eval-in-project]]
-        [leiningen.swank :only [swank]])
+        [leiningen.swank :only [swank]]
+        [swank.util.class-browse :only [scan-paths jar-file?]])
   (:require [clojure.java.io :as io]
-            [clojure.string :as string]))
+            [clojure.string :as string])
+  (:import (java.util.jar JarFile)))
+
+(defn- get-manifest [file]
+  (let [attrs (-> file JarFile. .getManifest .getMainAttributes)]
+    (zipmap (map str (keys attrs)) (vals attrs))))
+
+(defn- get-payloads [file]
+  (.split (get (get-manifest file) "Swank-Elisp-Payload") " "))
 
 (defn elisp-payload-files []
-  ;; hard-coded in for now
-  ["swank/payload/slime.el" "swank/payload/slime-repl.el"])
+  (apply concat ["swank/payload/slime.el" "swank/payload/slime-repl.el"]
+         (->> (scan-paths (System/getProperty "sun.boot.class.path")
+                          (System/getProperty "java.ext.dirs")
+                          (System/getProperty "java.class.path"))
+              (filter #(jar-file? (.getName (:file %))))
+              (get-payloads))))
 
 (defn payloads []
   (for [file (elisp-payload-files)]
