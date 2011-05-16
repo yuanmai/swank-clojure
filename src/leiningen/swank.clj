@@ -15,9 +15,8 @@
        (doto repl-init# require in-ns))
      (require '~'swank.swank)
      (require '~'swank.commands.basic)
-     (@(ns-resolve '~'swank.swank '~'start-repl)
-      (Integer. ~port) ~@(concat (map read-string opts)
-                                 [:host host]))
+     (@(ns-resolve '~'swank.swank '~'start-server)
+      ~@(concat (map read-string opts) [:host host :port (Integer. port)]))
      ;; This exits immediately when using :eval-in-leiningen; must block
      (when ~(:eval-in-leiningen project)
        (doseq [t# ((ns-resolve '~'swank.commands.basic '~'get-thread-list))]
