@@ -1,4 +1,4 @@
-(ns leiningen.jack
+(ns leiningen.jack-in
   (:use [leiningen.compile :only [eval-in-project]]
         [leiningen.swank :only [swank]])
   (:require [clojure.java.io :as io]
@@ -12,7 +12,13 @@
   (for [file (elisp-payload-files)]
     (slurp (io/resource file))))
 
-(defn ^{:help-arglists '([project] [project port] [project port host & opts])}
-  jack [project port]
+(defn jack-in
+  "Jack in to a Clojure SLIME session.
+
+This task is intended to be launched from Emacs using M-x clojure-jack-in,
+which is part of the clojure-mode library."
+  [project port]
+  (println ";;; Bootstrapping bundled version of SLIME; please wait...\n\n")
   (println (string/join "\n" (payloads)))
+  (println "(run-hooks 'slime-load-hook)")
   (swank project port "localhost" ":message" "\";;; proceed to jack in\""))
