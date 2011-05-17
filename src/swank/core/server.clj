@@ -40,7 +40,10 @@
 
    See also: `slime-secret'"
   ([#^Socket socket opts]
-     (returning [conn (make-connection socket (get opts :encoding default-encoding))]
+     (returning [conn (make-connection socket (or (:encoding opts)
+                                                  (System/getProperty
+                                                   "swank.encoding"
+                                                   "utf-8-unix")))]
        (if-let [secret (slime-secret)]
          (when-not (= (read-from-connection conn) secret)
            (close-socket! socket))
