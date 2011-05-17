@@ -77,7 +77,7 @@
   ([server connection-serve options]
      (start-server-socket! server connection-serve)
      (when-let [announce (options :announce)]
-       (announce (.getLocalPort server)))
+       (announce options))
      server))
 
 (defn setup-server
@@ -90,16 +90,9 @@
                         :host    (opts :host "localhost")
                         :backlog (opts :backlog 0)})
    #(socket-serve connection-serve % opts)
-   {:announce announce-fn}))
+   (merge {:announce announce-fn} opts)))
 
 ;; Announcement functions
-(defn simple-announce [port]
-  (println "Connection opened on local port " port))
+(defn simple-announce [{:keys [message host port] :as opts}]
+  (println (or message (format "Connection opened on %s port %s." host port))))
 
-(defn announce-port-to-file
-  "Writes the given port number into a file."
-  ([#^String file port]
-     (with-open [out (new java.io.FileWriter file)]
-       (doto out
-         (.write (str port "\n"))
-         (.flush)))))
