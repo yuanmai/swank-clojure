@@ -14,12 +14,13 @@
   (.split (get (get-manifest file) "Swank-Elisp-Payload") " "))
 
 (defn elisp-payload-files []
-  (apply concat ["swank/payload/slime.el" "swank/payload/slime-repl.el"]
-         (->> (scan-paths (System/getProperty "sun.boot.class.path")
-                          (System/getProperty "java.ext.dirs")
-                          (System/getProperty "java.class.path"))
-              (filter #(jar-file? (.getName (:file %))))
-              (get-payloads))))
+  ["swank/payload/slime.el" "swank/payload/slime-repl.el"]
+  #_(apply concat ["swank/payload/slime.el" "swank/payload/slime-repl.el"]
+           (->> (scan-paths (System/getProperty "sun.boot.class.path")
+                            (System/getProperty "java.ext.dirs")
+                            (System/getProperty "java.class.path"))
+                (filter #(jar-file? (.getName (:file %))))
+                (get-payloads))))
 
 (defn payloads []
   (for [file (elisp-payload-files)]
