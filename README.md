@@ -39,6 +39,12 @@ Commonly-used SLIME commands:
 Pressing "v" on a stack trace a debug buffer will jump to the file and
 line referenced by that frame if possible.
 
+If you need help with Emacs in general, try pressing <tt>C-h t</tt>
+(control-h followed by regular t) for the introductory tutorial. You
+may also find the commercial
+[PeepCode Emacs screencast](http://peepcode.com/products/meet-emacs)
+helpful.
+
 Note that SLIME was designed to work with Common Lisp, which has a
 distinction between interpreted code and compiled code. Clojure has no
 such distinction, so the load-file functionality is overloaded to add
@@ -130,10 +136,25 @@ It will prompt you for your host (usually localhost) and port. It may
 also warn you that your SLIME version doesn't match your Swank
 version; this should be OK.
 
+## Known Issues
+
+Currently having multiple versions of swank-clojure on the classpath
+can cause issues when running "lein swank" or "lein jack-in". It's
+recommended to not put swank-clojure in your :dev-dependencies but
+have users run "lein plugin install" to have it installed
+globally.
+
 Having old versions of SLIME installed either manually or using a
 system-wide package manager like apt-get may cause issues. Also the
 official CVS version of SLIME is not supported; it often breaks
 compatibility with Clojure.
+
+Not all SLIME functionality from Common Lisp is available in Clojure
+at this time; in particular only a small subset of the cross-reference
+commands are implemented.
+
+Swank-clojure and SLIME are only tested with GNU Emacs; forks such as
+Aquamacs and XEmacs may work but are untested.
 
 ## Embedding
 
