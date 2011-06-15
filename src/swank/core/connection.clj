@@ -6,7 +6,7 @@
            (java.io InputStreamReader OutputStreamWriter)))
 
 (def #^{:dynamic true} *current-connection*)
-(def default-encoding "iso-8859-1")
+(def default-encoding (or (System/getProperty "swank.encoding") "utf-8-unix"))
 
 (defmacro with-connection [conn & body]
   `(binding [*current-connection* ~conn] ~@body))
