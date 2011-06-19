@@ -72,13 +72,10 @@ If you put ~/.lein/bin on your $PATH it's even more convenient.
 
 ### Manual Swank in Project
 
-You can also start a swank server from inside your project.
-You'll need to either have installed using <tt>lein plugin
-install</tt> or have added swank-clojure to project.clj:
-
-    [swank-clojure "1.3.1"]
-
-Then launch the server:
+You can also start a swank server from inside your project but launch
+the server from outside Emacs (so that it can stay up longer than you
+have Emacs open, or so you can debug from a remote machine), you can
+use <tt>lein swank</tt>:
 
     $ lein swank # you can specify PORT and HOST optionally
 
@@ -163,7 +160,7 @@ within your own code, and connect via Emacs to that instance:
 
     (ns my-app
       (:require [swank.swank]))
-    (swank.swank/start-repl) ;; optionally takes a port argument
+    (swank.swank/start-server) ;; optionally takes a port argument
 
 Then use M-x slime-connect to connect from within Emacs.
 

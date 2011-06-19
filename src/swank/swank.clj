@@ -58,8 +58,7 @@
                           (eval '(cdt-backend-init))))))
 
 (defn start-server
-  "Start the server and write the listen port number to
-   PORT-FILE. This is the entry point for Emacs."
+  "Start the server. This is the entry point for Emacs."
   [& opts]
   (let [opts (apply hash-map opts)]
     (when (:load-cdt-on-startup opts)
