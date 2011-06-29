@@ -13,6 +13,7 @@
         [swank.core connection server]
         [swank.util.concurrent thread]
         [swank.util.net sockets]
+        [swank.commands.basic :only [get-thread-list]]
         [clojure.main :only [repl]])
   (:require [swank.commands]
             [swank.commands basic indent completion
@@ -57,7 +58,10 @@
     (setup-server (get opts :port 0)
                   simple-announce
                   connection-serve
-                  opts)))
+                  opts)
+    (when (:block opts)
+      (doseq [t (get-thread-list)]
+         (.join t)))))
 
 (defn start-repl
   "Start the server wrapped in a repl. Use this to embed swank in your code."
