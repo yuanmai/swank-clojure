@@ -1,7 +1,6 @@
 (ns leiningen.jack-in
   (:use [leiningen.compile :only [eval-in-project]]
-        [leiningen.swank :only [swank]]
-        [swank.util.class-browse :only [scan-paths jar-file?]])
+        [leiningen.swank :only [swank]])
   (:require [clojure.java.io :as io]
             [clojure.string :as string])
   (:import (java.util.jar JarFile)))
@@ -27,7 +26,7 @@
     (slurp (io/resource file))))
 
 (defn jack-in
-  "Jack in to a Clojure SLIME session.
+  "Jack in to a Clojure SLIME session from Emacs.
 
 This task is intended to be launched from Emacs using M-x clojure-jack-in,
 which is part of the clojure-mode library."

@@ -16,11 +16,8 @@
      (require '~'swank.swank)
      (require '~'swank.commands.basic)
      (@(ns-resolve '~'swank.swank '~'start-server)
-      ~@(concat (map read-string opts) [:host host :port (Integer. port)]))
-     ;; This exits immediately when using :eval-in-leiningen; must block
-     (when ~(:eval-in-leiningen project)
-       (doseq [t# ((ns-resolve '~'swank.commands.basic '~'get-thread-list))]
-         (.join t#)))))
+      ~@(concat (map read-string opts)
+                [:host host :port (Integer. port) :block true]))))
 
 (defn swank
   "Launch swank server for Emacs to connect. Optionally takes PORT and HOST."
