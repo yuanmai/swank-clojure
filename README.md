@@ -125,6 +125,12 @@ the byte-compilation of the packages. This is **normal**; the packages
 will work just fine even if there are problems byte-compiling it upon
 installation.
 
+Slime defaults to iso-8895-1 encoding if you aren't using <tt>M-x
+clojure-jack-in</tt> because that's what Common Lisp uses. You'll need
+to fix this when connecting to Clojure:
+
+    (setq slime-net-coding-system 'utf-8-unix)
+
 Then you should be able to connect to the swank server you launched:
 
     M-x slime-connect
