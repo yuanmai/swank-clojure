@@ -33,7 +33,7 @@
                           (System/getProperty "user.home")
                           feature checksum)]
     (.mkdirs (.getParentFile (io/file user-file)))
-    (io/copy (io/file (.getFile (io/resource file))) (io/file user-file))
+    (io/copy (.openStream (io/resource file)) (io/file user-file))
     (with-open [w (io/writer user-file :append true)]
       (.write w (format "\n(provide '%s-%s)\n" feature checksum)))
     (format "(when (not (featurep '%s-%s))
@@ -54,5 +54,6 @@ which is part of the clojure-mode library."
   [project port]
   (println ";;; Bootstrapping bundled version of SLIME; please wait...\n\n")
   (println (string/join "\n" (payload-loaders)))
-  (println "(run-hooks 'slime-load-hook)")
+  (println "(sleep-for 0.1)") ; TODO: remove
+  (println "(run-hooks 'slime-load-hook) ; on port" port)
   (swank project port "localhost" ":message" "\";;; proceed to jack in\""))
