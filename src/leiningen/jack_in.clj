@@ -40,7 +40,8 @@
                (if (file-readable-p \"%s\")
                  (load-file \"%s\")
                (byte-compile-file \"%s\" t)))"
-            feature checksum user-file user-file user-file)))
+            feature checksum user-file user-file
+            (.replaceAll user-file "\\.elc$" ".el"))))
 
 (defn payload-loaders []
   (for [file (elisp-payload-files)]
