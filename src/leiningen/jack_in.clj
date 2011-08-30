@@ -34,10 +34,9 @@
                          feature checksum)
         elisp (str basename ".el")
         bytecode (str basename ".elc")
-        elisp-file (io/file elisp)
-        _ (.mkdirs (.getParentFile elisp-file))
-        resource-stream (.openStream (io/resource resource))]
-    (with-open [r resource-stream]
+        elisp-file (io/file elisp)]
+    (.mkdirs (.getParentFile elisp-file))
+    (with-open [r (.openStream (io/resource resource))]
       (io/copy r elisp-file))
     (with-open [w (io/writer elisp-file :append true)]
       (.write w (format "\n(provide '%s-%s)\n" feature checksum)))
