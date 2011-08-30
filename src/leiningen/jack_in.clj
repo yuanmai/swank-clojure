@@ -29,19 +29,19 @@
 (defn loader [file]
   (let [feature (second (re-find #".*/(.*?).el$" file))
         checksum (subs (hex-digest file) 0 8)
-        user-file (format "%s/.emacs.d/swank/%s-%s.elc"
-                          (System/getProperty "user.home")
-                          feature checksum)]
-    (.mkdirs (.getParentFile (io/file user-file)))
-    (io/copy (.openStream (io/resource file)) (io/file user-file))
-    (with-open [w (io/writer user-file :append true)]
+        elisp-source (format "%s/.emacs.d/swank/%s-%s.el"
+                             (System/getProperty "user.home")
+                             feature checksum)
+        elisp (.replaceAll elisp-source "\\.el$" "")]
+    (.mkdirs (.getParentFile (io/file elisp-source)))
+    (io/copy (.openStream (io/resource file)) (io/file elisp-source))
+    (with-open [w (io/writer elisp-source :append true)]
       (.write w (format "\n(provide '%s-%s)\n" feature checksum)))
     (format "(when (not (featurep '%s-%s))
-               (if (file-readable-p \"%s\")
+               (if (file-readable-p \"%s.elc\")
                  (load-file \"%s\")
                (byte-compile-file \"%s\" t)))"
-            feature checksum user-file user-file
-            (.replaceAll user-file "\\.elc$" ".el"))))
+            feature checksum elisp elisp elisp-source)))
 
 (defn payload-loaders []
   (for [file (elisp-payload-files)]
