@@ -130,10 +130,34 @@ It will prompt you for your host (usually localhost) and port. It may
 also warn you that your SLIME version doesn't match your Swank
 version; this should be OK.
 
-Having old versions of SLIME either manually installed or installed
-using a system-wide package manager like apt-get may cause
-issues. Also the official CVS version of SLIME is not supported; it
-often breaks compatibility with Clojure.
+# Known Issues
+
+Currently having multiple versions of swank-clojure on the classpath
+can cause issues when running "lein swank" or "lein jack-in". It's
+recommended to not put swank-clojure in your :dev-dependencies but
+have users run "lein plugin install" to have it installed globally.
+
+Having old versions of SLIME installed either manually or using a
+system-wide package manager like apt-get may cause issues. Also the
+official CVS version of SLIME is not supported; it often breaks
+compatibility with Clojure.
+
+Not all SLIME functionality from Common Lisp is available in Clojure
+at this time; in particular only a small subset of the cross-reference
+commands are implemented.
+
+Swank-clojure and SLIME are only tested with GNU Emacs; forks such as
+Aquamacs and XEmacs may work but are untested.
+
+On Mac OS X, Emacs sessions launched from the GUI don't always respect
+your configured $PATH. If Emacs can't find `lein`, you may need to
+give it some help. The quickest way is probably to add this elisp to
+your config:
+
+    (setenv "PATH" (shell-command-to-string "echo $PATH"))
+
+If you are having trouble connecting, check the value of the
+<tt>\*swank\*</tt> buffer for error messages.
 
 ## Embedding
 
