@@ -73,6 +73,6 @@
                          (do (reset! stop true)
                              `(start-server ~@(apply concat opts)))))
              :need-prompt (constantly false))))
-  ([] (start-repl 4005)))
+  ([] (start-repl (or (System/getenv "PORT") 4005))))
 
 (def -main start-repl)
