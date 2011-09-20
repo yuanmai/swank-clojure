@@ -29,7 +29,15 @@
             (with-open [secret (BufferedReader. (FileReader. slime-secret-file))]
               (.readLine secret)))))))
 
-(defn- accept-authenticated-connection ;; rename to authenticate-socket, takes in a connection
+(defn- make-output-redirection
+  ([conn]
+     (call-on-flush-stream
+      #(with-connection conn
+         (send-to-emacs `(:write-string ~%)))))
+  {:tag java.io.StringWriter})
+
+;; rename to authenticate-socket, takes in a connection
+(defn- accept-authenticated-connection
   "Accepts and returns new connection if it is from an authenticated
    machine. Otherwise, return nil.
 
@@ -44,17 +52,14 @@
                                                   (System/getProperty
                                                    "swank.encoding"
                                                    "utf-8-unix")))]
+       (when (:repl-out-root opts)
+         (alter-var-root #'*out* (constantly
+                                  (java.io.PrintWriter.
+                                   (make-output-redirection conn)))))
        (if-let [secret (slime-secret)]
          (when-not (= (read-from-connection conn) secret)
            (close-socket! socket))
          conn))))
-
-(defn- make-output-redirection
-  ([conn]
-     (call-on-flush-stream
-      #(with-connection conn
-         (send-to-emacs `(:write-string ~%)))))
-  {:tag java.io.StringWriter})
 
 (defn- socket-serve [connection-serve socket opts]
   (with-connection (accept-authenticated-connection socket opts)

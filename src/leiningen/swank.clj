@@ -17,7 +17,8 @@
      (require '~'swank.commands.basic)
      (@(ns-resolve '~'swank.swank '~'start-server)
       ~@(concat (map read-string opts)
-                [:host host :port (Integer. port) :block true]))))
+                [:host host :port (Integer. port)
+                 :repl-out-root true :block true]))))
 
 (defn swank
   "Launch swank server for Emacs to connect. Optionally takes PORT and HOST."
