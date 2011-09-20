@@ -1,13 +1,3 @@
-;;;; swank-clojure.clj --- Swank server for Clojure
-;;;
-;;; Copyright (C) 2008 Jeffrey Chu
-;;;
-;;; This file is licensed under the terms of the GNU General Public
-;;; License as distributed with Emacs (press C-h C-c to view it).
-;;;
-;;; See README file for more information about installation
-;;;
-
 (ns swank.swank
   (:use [swank.core]
         [swank.core connection server]
