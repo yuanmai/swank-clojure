@@ -6,21 +6,15 @@
   (:import (java.util.jar JarFile)
            (java.security MessageDigest)))
 
-(defn- get-manifest [file]
-  (let [attrs (-> file JarFile. .getManifest .getMainAttributes)]
-    (zipmap (map str (keys attrs)) (vals attrs))))
-
-(defn- get-payloads [file]
-  (.split (get (get-manifest file) "Swank-Elisp-Payload") " "))
+(def payloads-file-name "swank_elisp_payloads.clj")
 
 (defn elisp-payload-files []
-  ["swank/payload/slime.el" "swank/payload/slime-repl.el"]
-  #_(apply concat ["swank/payload/slime.el" "swank/payload/slime-repl.el"]
-           (->> (scan-paths (System/getProperty "sun.boot.class.path")
-                            (System/getProperty "java.ext.dirs")
-                            (System/getProperty "java.class.path"))
-                (filter #(jar-file? (.getName (:file %))))
-                (get-payloads))))
+  (->> (.getResources (.getContextClassLoader (Thread/currentThread))
+                      payloads-file-name)
+       (enumeration-seq)
+       (map (comp read-string slurp))
+       (apply concat)
+       (set)))
 
 (defn hex-digest [file]
   (format "%x" (BigInteger. 1 (.digest (MessageDigest/getInstance "SHA1")
