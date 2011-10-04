@@ -13,7 +13,7 @@ using [Leiningen](http://github.com/technomancy/leiningen):
 * Install clojure-mode either from
   [Marmalade](http://marmalade-repo.org) or from
   [git](http://github.com/technomancy/clojure-mode).
-* <tt>lein plugin install swank-clojure 1.3.2</tt>
+* <tt>lein plugin install swank-clojure 1.3.3</tt>
 * From inside a project, invoke <tt>M-x clojure-jack-in</tt>
 
 That's all it takes! There are no extra install steps beyond
@@ -24,11 +24,12 @@ Leiningen side.
 
 Commonly-used SLIME commands:
 
+* **M-.**: Jump to the definition of a var
 * **C-c TAB**: Autocomplete symbol at point
 * **C-x C-e**: Eval the form under the point
 * **C-c C-k**: Compile the current buffer
 * **C-c C-l**: Load current buffer and force required namespaces to reload
-* **M-.**: Jump to the definition of a var
+* **C-M-x**: Compile the whole top-level form under the point.
 * **C-c S-i**: Inspect a value
 * **C-c C-m**: Macroexpand the call under the point
 * **C-c C-d C-d**: Look up documentation for a var
@@ -47,9 +48,9 @@ such distinction, so the load-file functionality is overloaded to add
 ## Alternate Usage
 
 There are other ways to use Swank for different specific
-circumstances.  For each of these methods you will have to install
-slime and slime-repl manually as outlined in "Connecting with SLIME"
-below.
+circumstances.  For each of these methods you will have to install the
+slime and slime-repl Emacs Lisp libraries manually as outlined in
+"Connecting with SLIME" below.
 
 ### Standalone Server
 
@@ -57,22 +58,19 @@ If you just want a standalone swank server with no third-party
 libraries, you can use the shell wrapper that Leiningen installs for
 you:
 
-    $ lein plugin install swank-clojure 1.3.2
+    $ lein plugin install swank-clojure 1.3.3
     $ ~/.lein/bin/swank-clojure
 
     M-x slime-connect
 
-If you put ~/.lein/bin on your $PATH it's even more convenient.
+If you put <tt>~/.lein/bin</tt> on your <tt>$PATH</tt> it's even more
+convenient.
 
 ### Manual Swank in Project
 
-You can also start a swank server from inside your project.
-You'll need to either have installed using <tt>lein plugin
-install</tt> or have added swank-clojure to project.clj:
-
-    [swank-clojure "1.3.2"]
-
-Then launch the server:
+You can also start a swank server by hand from inside your project.
+You'll need to have installed using <tt>lein plugin
+install</tt>, then launch the server from the shell:
 
     $ lein swank # you can specify PORT and HOST optionally
 
@@ -82,7 +80,7 @@ If you're using Maven, add this to your pom.xml under the
     <dependency>
       <groupId>swank-clojure</groupId>
       <artifactId>swank-clojure</artifactId>
-      <version>1.3.2</version>
+      <version>1.3.3</version>
     </dependency>
 
 Then you can launch a swank server like so:
@@ -97,6 +95,21 @@ Put this in your Emacs configuration to get syntax highlighting in the
 slime repl:
 
     (add-hook 'slime-repl-mode-hook 'clojure-mode-font-lock-setup)
+
+### Embedding
+
+You can embed Swank Clojure in your project, start the server from
+within your own code, and connect via Emacs to that instance:
+
+    (ns my-app
+      (:require [swank.swank]))
+    (swank.swank/start-repl) ;; optionally takes a port argument
+
+To make this work in production, swank-clojure needs to be in
+<tt>:dependencies</tt> in project.clj in addition to being installed
+as a user-level plugin. If you do this, you can also start the server
+directly from the "java" command-line launcher if you AOT-compile it
+and specify "swank.swank" as your main class.
 
 ## Connecting with SLIME
 
@@ -113,9 +126,9 @@ Then add Marmalade as an archive source in your Emacs config:
     (add-to-list 'package-archives
                  '("marmalade" . "http://marmalade-repo.org/packages/") t)
 
-Then you can do <kbd>M-x package-list-packages</kbd>. Go down to
-slime-repl and mark it with <kbd>i</kbd>. Execute the installation by
-pressing <kbd>x</kbd>.
+Run <kbd>M-x package-refresh-contents</tt> to pull in the latest
+source lists. Then you can do <kbd>M-x package-install</kbd> and
+choose <kbd>slime-repl</kbd>.
 
 When you perform the installation, you will see warnings related to
 the byte-compilation of the packages. This is **normal**; the packages
@@ -137,6 +150,13 @@ can cause issues when running "lein swank" or "lein jack-in". It's
 recommended to not put swank-clojure in your :dev-dependencies but
 have users run "lein plugin install" to have it installed globally.
 
+It's also possible for some packages to pull in old versions of
+swank-clojure transitively, so check the <tt>lib/</tt> directory if
+you are having issues. In particular, Incanter is known to exhibit
+this problem. Judicious use of <tt>:exclusions</tt> make it work:
+
+    :dependencies [[incanter "1.2.3" :exclusions [swank-clojure]]]
+
 Having old versions of SLIME installed either manually or using a
 system-wide package manager like apt-get may cause issues. Also the
 official CVS version of SLIME is not supported; it often breaks
@@ -156,23 +176,8 @@ your config:
 
     (setenv "PATH" (shell-command-to-string "echo $PATH"))
 
-If you are having trouble connecting, check the value of the
-<tt>\*swank\*</tt> buffer for error messages.
-
-## Embedding
-
-You can embed Swank Clojure in your project, start the server from
-within your own code, and connect via Emacs to that instance:
-
-    (ns my-app
-      (:require [swank.swank]))
-    (swank.swank/start-repl) ;; optionally takes a port argument
-
-Then use M-x slime-connect to connect from within Emacs.
-
-You can also start the server directly from the "java" command-line
-launcher if you AOT-compile it and specify "swank.swank" as your main
-class.
+If you are having trouble connecting, check the <tt>\*swank\*</tt>
+buffer for error messages.
 
 ## Debugging
 
@@ -189,8 +194,8 @@ lexical scope.
 
 ## Community
 
-The [mailing list](http://groups.google.com/group/swank-clojure) and
-clojure channel on Freenode are the best places to bring up
+The [swank-clojure mailing list](http://groups.google.com/group/swank-clojure) 
+and clojure channel on Freenode are the best places to bring up
 questions/issues.
 
 Contributions are preferred as either Github pull requests or using
@@ -203,7 +208,7 @@ either.
 
 ## License
 
-Copyright (C) 2008-2011 Jeffrey Chu, Phil Hagelberg, Hugo Duncan, and
+Copyright © 2008-2011 Jeffrey Chu, Phil Hagelberg, Hugo Duncan, and
 contributors
 
 Licensed under the EPL. (See the file COPYING.)
