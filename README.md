@@ -125,10 +125,11 @@ Then add Marmalade as an archive source in your Emacs config:
     (require 'package)
     (add-to-list 'package-archives
                  '("marmalade" . "http://marmalade-repo.org/packages/") t)
+    (package-initialize)
 
-Run <kbd>M-x package-refresh-contents</tt> to pull in the latest
-source lists. Then you can do <kbd>M-x package-install</kbd> and
-choose <kbd>slime-repl</kbd>.
+Evaluate that, then run <kbd>M-x package-refresh-contents</kbd> to
+pull in the latest source lists. Then you can do <kbd>M-x
+package-install</kbd> and choose <kbd>slime-repl</kbd>.
 
 When you perform the installation, you will see warnings related to
 the byte-compilation of the packages. This is **normal**; the packages
@@ -148,7 +149,9 @@ version; this should be OK.
 Currently having multiple versions of swank-clojure on the classpath
 can cause issues when running "lein swank" or "lein jack-in". It's
 recommended to not put swank-clojure in your :dev-dependencies but
-have users run "lein plugin install" to have it installed globally.
+have users run "lein plugin install" to have it installed globally for
+all projects. This also means that people hacking on your project
+won't have to pull it in if they are not Emacs users.
 
 It's also possible for some packages to pull in old versions of
 swank-clojure transitively, so check the <tt>lib/</tt> directory if
@@ -176,10 +179,7 @@ your config:
 
     (setenv "PATH" (shell-command-to-string "echo $PATH"))
 
-If you are having trouble connecting, check the <tt>\*swank\*</tt>
-buffer for error messages.
-
-## Debugging
+## Debugger
 
 You can set repl-aware breakpoints using <tt>swank.core/break</tt>.
 For now, see
