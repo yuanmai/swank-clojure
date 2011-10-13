@@ -65,8 +65,9 @@
              :need-prompt (constantly false))))
   ([] (start-repl (or (System/getenv "PORT") 4005))))
 
-(defn -main [port & args]
-  (apply start-server port (for [a args]
-                             (cond (re-find #"^\d+$" a) (Integer/parseInt a)
-                                   (re-find #"^:\w+$" a) (keyword (subs a 1))
-                                   :else a))))
+(defn -main [port & opts]
+  (apply start-server
+         (for [a (concat [":port" port] opts)]
+           (cond (re-find #"^\d+$" a) (Integer/parseInt a)
+                 (re-find #"^:\w+$" a) (keyword (subs a 1))
+                 :else a))))
