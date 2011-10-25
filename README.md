@@ -18,7 +18,8 @@ using [Leiningen](http://github.com/technomancy/leiningen):
 
 That's all it takes! There are no extra install steps beyond
 clojure-mode on the Emacs side and the swank-clojure plugin on the
-Leiningen side.
+Leiningen side. In particular be sure you don't have any other
+versions of Slime installed; see "Troubleshooting" below.
 
 ## SLIME Commands
 
@@ -144,7 +145,7 @@ It will prompt you for your host (usually localhost) and port. It may
 also warn you that your SLIME version doesn't match your Swank
 version; this should be OK.
 
-# Known Issues
+## Troubleshooting
 
 Currently having multiple versions of swank-clojure on the classpath
 can cause issues when running "lein swank" or "lein jack-in". It's
@@ -163,11 +164,8 @@ this problem. Judicious use of <tt>:exclusions</tt> make it work:
 Having old versions of SLIME installed either manually or using a
 system-wide package manager like apt-get may cause issues. Also the
 official CVS version of SLIME is not supported; it often breaks
-compatibility with Clojure.
-
-Not all SLIME functionality from Common Lisp is available in Clojure
-at this time; in particular only a small subset of the cross-reference
-commands are implemented.
+compatibility with Clojure. In addition, the `slime-clj` packages are
+incompatible with swank-clojure.
 
 Swank-clojure and SLIME are only tested with GNU Emacs; forks such as
 Aquamacs and XEmacs may work but are untested.
