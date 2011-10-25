@@ -148,9 +148,9 @@ version; this should be OK.
 ## Troubleshooting
 
 Currently having multiple versions of swank-clojure on the classpath
-can cause issues when running "lein swank" or "lein jack-in". It's
-recommended to not put swank-clojure in your :dev-dependencies but
-have users run "lein plugin install" to have it installed globally for
+can cause issues when running `lein swank` or `lein jack-in`. It's
+recommended to not put swank-clojure in your `:dev-dependencies` but
+have users run `lein plugin install` to have it installed globally for
 all projects. This also means that people hacking on your project
 won't have to pull it in if they are not Emacs users.
 
@@ -166,6 +166,10 @@ system-wide package manager like apt-get may cause issues. Also the
 official CVS version of SLIME is not supported; it often breaks
 compatibility with Clojure. In addition, the `slime-clj` packages are
 incompatible with swank-clojure.
+
+Currently `clojure-jack-in` is incompatible with Leiningen options
+that cause the process to emit output on boot, including
+`:warn-on-reflection`. This will be addressed in a future version.
 
 Swank-clojure and SLIME are only tested with GNU Emacs; forks such as
 Aquamacs and XEmacs may work but are untested.
