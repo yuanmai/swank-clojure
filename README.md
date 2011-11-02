@@ -155,11 +155,18 @@ all projects. This also means that people hacking on your project
 won't have to pull it in if they are not Emacs users.
 
 It's also possible for some packages to pull in old versions of
-swank-clojure transitively, so check the <tt>lib/</tt> directory if
+swank-clojure transitively, so check the `lib/` directory if
 you are having issues. In particular, Incanter is known to exhibit
-this problem. Judicious use of <tt>:exclusions</tt> make it work:
+this problem. Judicious use of `:exclusions` make it work:
 
-    :dependencies [[incanter "1.2.3" :exclusions [swank-clojure]]]
+```clj
+   :dependencies [[incanter "1.2.3" :exclusions [swank-clojure]]]
+```
+
+Currently `M-x clojure-jack-in` expects that `lein jack-in $PORT`
+emits no output other than elisp. If you have hooks causing other
+messages to be emitted or have `:warn-on-reflection` turned on this
+could cause errors bootstrapping.
 
 Having old versions of SLIME installed either manually or using a
 system-wide package manager like apt-get may cause issues. Also the
