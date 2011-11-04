@@ -55,4 +55,5 @@ which is part of the clojure-mode library."
   (println (string/join "\n" (payload-loaders)))
   (println "(sleep-for 0.1)") ; TODO: remove
   (println "(run-hooks 'slime-load-hook) ; on port" port)
+  (println ";;; Done bootstrapping.")
   (swank project port "localhost" ":message" "\";;; proceed to jack in\""))
