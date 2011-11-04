@@ -174,10 +174,6 @@ official CVS version of SLIME is not supported; it often breaks
 compatibility with Clojure. In addition, the `slime-clj` packages are
 incompatible with swank-clojure.
 
-Currently `clojure-jack-in` is incompatible with Leiningen options
-that cause the process to emit output on boot, including
-`:warn-on-reflection`. This will be addressed in a future version.
-
 Swank-clojure and SLIME are only tested with GNU Emacs; forks such as
 Aquamacs and XEmacs may work but are untested.
 
