@@ -4,7 +4,8 @@
         (swank.util.concurrent thread)
         (swank.util.net sockets)
         (swank.core connection protocol))
-  (:import (java.io File FileReader BufferedReader InputStreamReader OutputStreamWriter)
+  (:import (java.io File FileReader BufferedReader PrintWriter
+                    InputStreamReader OutputStreamWriter)
            (java.net Socket)))
 
 ;; The swank.core.server is the layer above swank.util.net.sockets
@@ -52,10 +53,13 @@
                                                   (System/getProperty
                                                    "swank.encoding"
                                                    "utf-8-unix")))]
-       (when (:repl-out-root opts)
-         (alter-var-root #'*out* (constantly
-                                  (java.io.PrintWriter.
-                                   (make-output-redirection conn)))))
+                (when (:repl-out-root opts)
+                  (alter-var-root #'*out* (constantly
+                                           (PrintWriter.
+                                            (make-output-redirection conn))))
+                  (alter-var-root #'*err* (constantly
+                                           (PrintWriter.
+                                            (make-output-redirection conn)))))
        (if-let [secret (slime-secret)]
          (when-not (= (read-from-connection conn) secret)
            (close-socket! socket))
