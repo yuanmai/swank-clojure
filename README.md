@@ -175,7 +175,7 @@ compatibility with Clojure. In addition, the `slime-clj` packages are
 incompatible with swank-clojure.
 
 Swank-clojure and SLIME are only tested with GNU Emacs; forks such as
-Aquamacs and XEmacs may work but are untested.
+Aquamacs and XEmacs may work but are not officially supported.
 
 On Mac OS X, Emacs sessions launched from the GUI don't always respect
 your configured $PATH. If Emacs can't find `lein`, you may need to
@@ -183,6 +183,18 @@ give it some help. The quickest way is probably to add this elisp to
 your config:
 
     (setenv "PATH" (shell-command-to-string "echo $PATH"))
+
+## How it Works
+
+Swank Clojure is simply a server that communicates over the Slime
+protocol with an Emacs process. As such it runs in a JVM process,
+usually launched by Leiningen. Slime is a client that runs within
+Emacs to communicate with Swank. You can start the two of them
+separately as explained in "Connecting with SLIME" above, but `M-x
+clojure-jack-in` will send the elisp code for Slime to the Emacs
+process to ensure that it uses a version of Slime that is compatible
+with that version of Swank. Once the Swank server is finished loading,
+it sends a signal to Emacs to connect to it.
 
 ## Debugger
 
