@@ -1,9 +1,8 @@
 # Swank Clojure
 
 [Swank Clojure](http://github.com/technomancy/swank-clojure) is a
-server that allows [SLIME](http://common-lisp.net/project/slime/) (the
-Superior Lisp Interaction Mode for Emacs) to connect to Clojure
-projects.
+server that allows SLIME (the Superior Lisp Interaction Mode for
+Emacs) to connect to Clojure projects.
 
 ## Usage
 
@@ -208,6 +207,12 @@ Swank Clojure since 1.4.0) is a more comprehensive debugging tool
 that includes support for stepping, seting breakpoints, catching
 exceptions, and eval clojure expressions in the context of the current
 lexical scope.
+
+## TODO
+
+* clj-stacktrace integration
+* show method argument names in slime inspector (theoretically possible?)
+* show better metadata on functions in inspector
 
 ## Community
 
