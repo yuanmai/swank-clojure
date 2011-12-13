@@ -167,22 +167,22 @@
       (fn [name val]
 	`(~(str "  " name ": ") (:value ~val) (:newline))) names vals))))
 
+(defn- inspect-class-section [obj section]
+  (let [method (symbol (str ".get" (name section)))
+        elements (eval (list method obj))]
+    (if (seq elements)
+      `(~(name section) ": " (:newline)
+        ~@(mapcat (fn [f] `("  " (:value ~f) (:newline))) elements)))))
+
 (defmethod emacs-inspect :class [#^Class obj]
-  (let [meths (. obj getMethods)
-        fields (. obj getFields)
-        constructors (.getConstructors obj)]
-    (concat
-     `("Type: " (:value ~(class obj)) (:newline)
-       "---" (:newline)
-       "Fields: " (:newline))
-     (mapcat (fn [f]
-               `("  " (:value ~f) (:newline))) fields)
-     '("---" (:newline) "Constructors: " (:newline))
-     (mapcat (fn [c] `("  " (:value ~c) (:newline))) constructors)
-     '("---" (:newline)
-       "Methods: " (:newline))
-     (mapcat (fn [m]
-               `("  " (:value ~m) (:newline))) meths))))
+  (apply concat (interpose ['(:newline) "--- "]
+                           (cons `("Type: " (:value ~(class obj)) (:newline))
+                                 (for [section [:Interfaces :Constructors
+                                                :Fields :Methods]
+                                       :let [elements (inspect-class-section
+                                                       obj section)]
+                                       :when (seq elements)]
+                                   elements)))))
 
 (defmethod emacs-inspect :aref [#^clojure.lang.ARef obj]
   `("Type: " (:value ~(class obj)) (:newline)
