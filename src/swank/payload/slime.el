@@ -5699,15 +5699,16 @@ Returns nil if both fails."
  (defun sldb-insert-frame (frame &optional face)
    "Insert FRAME with FACE at point.
  If FACE is nil, `sldb-compute-frame-face' is used to determine the face."
-   (setq face (or face (sldb-compute-frame-face frame)))
    (let ((number (sldb-frame.number frame))
-         (string (sldb-frame.string frame))
+         (string (ansi-color-apply (sldb-frame.string frame)))
          (props `(frame ,frame sldb-default-action sldb-toggle-details)))
      (slime-propertize-region props
        (slime-propertize-region '(mouse-face highlight)
          (insert " " (in-sldb-face frame-label (format "%2d:" number)) " ")
          (slime-insert-indented
-          (slime-add-face face string)))
+          (if face
+            (slime-add-face face string)
+            string)))
        (insert "\n"))))
 
  (defun sldb-fetch-more-frames (&rest ignore)

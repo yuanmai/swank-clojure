@@ -120,7 +120,7 @@ values."
 
 (defn- exception-str [width elem]
   (pst-elem-str
-   false
+   true
    (parse-trace-elem elem)
    width))
 
