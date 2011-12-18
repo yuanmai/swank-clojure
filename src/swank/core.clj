@@ -118,7 +118,7 @@ values."
 (defn- debug-abort-exception? [t]
   (some #(identical? debug-abort-exception %) (exception-causes t)))
 
-(defn exception-str [elem]
+(defn- exception-str [elem]
   (let [parsed (clj-stacktrace.core/parse-trace-elem elem)]
     (str (:file parsed) ":" (:line parsed) " " (:class parsed))))
 
