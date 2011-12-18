@@ -2,9 +2,9 @@
   (:use (swank util commands)
         (swank.util hooks)
         (swank.util.concurrent thread)
-        (swank.core connection hooks threadmap))
-  (:require (swank.util.concurrent [mbox :as mb])
-            (clj-stacktrace core repl)))
+        (swank.core connection hooks threadmap)
+        (clj-stacktrace core repl))
+  (:require (swank.util.concurrent [mbox :as mb])))
 
 ;; Protocol version
 (defonce protocol-version (atom "20100404"))
@@ -119,17 +119,13 @@ values."
   (some #(identical? debug-abort-exception %) (exception-causes t)))
 
 (defn- exception-str [width elem]
-  (let [out (java.io.StringWriter.)]
-    (do
-      (clj-stacktrace.repl/pst-elems-on
-       out
-       false
-       [(clj-stacktrace.core/parse-trace-elem elem)]
-       width)
-      (.toString out))))
+  (pst-elem-str
+   false
+   (parse-trace-elem elem)
+   width))
 
 (defn exception-stacktrace [t]
-  (let [width (clj-stacktrace.repl/find-source-width (clj-stacktrace.core/parse-exception t))]
+  (let [width (find-source-width (parse-exception t))]
     (map #(list %1 %2 '(:restartable nil))
          (iterate inc 0)
          (map #(exception-str width %) (.getStackTrace t)))))
