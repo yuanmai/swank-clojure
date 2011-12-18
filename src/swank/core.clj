@@ -56,6 +56,7 @@
 (defonce debug-quit-exception (Exception. "Debug quit"))
 (defonce debug-continue-exception (Exception. "Debug continue"))
 (defonce debug-abort-exception (Exception. "Debug abort"))
+(defonce debug-invalid-restart-exception (Exception. "Invalid restart"))
 
 (def #^{:dynamic true} #^Throwable *current-exception* nil)
 
@@ -117,6 +118,9 @@ values."
 
 (defn- debug-abort-exception? [t]
   (some #(identical? debug-abort-exception %) (exception-causes t)))
+
+(defn- debug-invalid-restart-exception? [t]
+  (some #(identical? debug-invalid-restart-exception %) (exception-causes t)))
 
 (defn- exception-str [width elem]
   (pst-elem-str
@@ -276,16 +280,19 @@ values."
         (send-to-emacs `(:return ~(thread-name (current-thread)) (:abort) ~id))
         (throw t))
 
+      (debug-invalid-restart-exception? t)
+      (send-to-emacs `(:return ~(thread-name (current-thread)) (:ok "Restart index out of bounds") ~id))
+
       :else
       (do
         (set! *e t)
         (try
-         (sldb-debug
-          nil
-          (if debug-swank-clojure t (or (.getCause t) t))
-          id)
-         ;; reply with abort
-         (finally (send-to-emacs `(:return ~(thread-name (current-thread)) (:abort) ~id)))))))))
+          (sldb-debug
+           nil
+           (if debug-swank-clojure t (or (.getCause t) t))
+           id)
+          ;; reply with abort
+          (finally (send-to-emacs `(:return ~(thread-name (current-thread)) (:abort) ~id)))))))))
 
 (defn- add-active-thread [thread]
   (dosync
