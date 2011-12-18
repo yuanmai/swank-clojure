@@ -73,7 +73,7 @@
                 *err* out-redir]
         (dosync (ref-set (*current-connection* :writer-redir) *out*))
         (dosync (alter connections conj *current-connection*))
-        (connection-serve *current-connection* (:colors? opts))))))
+        (connection-serve *current-connection* opts)))))
 
 ;; Setup frontent
 (defn start-swank-socket-server!

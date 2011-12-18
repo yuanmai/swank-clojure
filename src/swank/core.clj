@@ -399,9 +399,9 @@ values."
   "A loop that reads from the mbox queue and runs dispatch-event on
    it (will block if no mbox control message is available). This is
    intended to only be run on the control thread."
-  ([conn colors?]
+  ([conn opts]
      (dosync
-      (ref-set *color-support?* colors?))
+      (ref-set *color-support?* (:colors? opts false)))
      (binding [*1 nil, *2 nil, *3 nil, *e nil]
        (with-connection conn
          (continuously (dispatch-event (mb/receive (current-thread)) conn))))))

@@ -15,12 +15,12 @@
 (defn ignore-protocol-version [version]
   (reset! protocol-version version))
 
-(defn- connection-serve [conn colors?]
+(defn- connection-serve [conn opts]
   (let [control
         (dothread-swank
           (thread-set-name "Swank Control Thread")
           (try
-           (control-loop conn colors?)
+           (control-loop conn opts)
            (catch Exception e
              ;; fail silently
              nil))
