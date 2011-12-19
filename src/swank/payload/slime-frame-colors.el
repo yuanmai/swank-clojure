@@ -12,3 +12,5 @@
         (remove-text-properties beg-line (point) '(face nil))))))
 
 (ad-activate #'sldb-insert-frame)
+
+(provide 'slime-frame-colors)

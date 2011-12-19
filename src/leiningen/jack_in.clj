@@ -24,7 +24,10 @@
   (let [feature (second (re-find #".*/(.*?).el$" resource))
         checksum (subs (hex-digest resource) 0 8)
         filename (format "%s-%s" feature checksum)
-        basename (.replaceAll (.getAbsolutePath (io/file (System/getProperty "user.home") ".emacs.d" "swank" filename)) "\\\\" "/")
+        basename (-> (System/getProperty "user.home")
+                     (io/file ".emacs.d" "swank" filename)
+                     (.getAbsolutePath)
+                     (.replaceAll "\\\\" "/"))
         elisp (str basename ".el")
         bytecode (str basename ".elc")
         elisp-file (io/file elisp)]
@@ -52,9 +55,10 @@ which is part of the clojure-mode library."
   [project port]
   (println ";;; Bootstrapping bundled version of SLIME; please wait...\n\n")
   (let [loaders (string/join "\n" (payload-loaders))
-        colors? (.contains loaders "swank-colors")]
+        colors? (.contains loaders "slime-frame-colors")]
     (println loaders)
     (println "(sleep-for 0.1)") ; TODO: remove
     (println "(run-hooks 'slime-load-hook) ; on port" port)
     (println ";;; Done bootstrapping.")
-    (swank project port "localhost" ":colors?" (str colors?) ":message" "\";;; proceed to jack in\"")))
+    (swank project port "localhost" ":colors?" (str colors?)
+           ":message" "\";;; proceed to jack in\"")))
