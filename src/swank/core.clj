@@ -15,7 +15,7 @@
 ;; current emacs eval id
 (def #^{:dynamic true} *pending-continuations* '())
 
-(def #^{:dynamic true} *color-support?* (ref false))
+(def color-support? (atom false))
 
 (def sldb-stepping-p nil)
 (def sldb-initial-frames 10)
@@ -125,10 +125,7 @@ values."
   (some #(identical? debug-invalid-restart-exception %) (exception-causes t)))
 
 (defn- exception-str [width elem]
-  (pst-elem-str
-   @*color-support?*
-   (parse-trace-elem elem)
-   width))
+  (pst-elem-str @color-support? (parse-trace-elem elem) width))
 
 (defn exception-stacktrace [t]
   (let [width (find-source-width (parse-exception t))]
