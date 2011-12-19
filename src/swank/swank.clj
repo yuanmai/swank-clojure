@@ -15,12 +15,12 @@
 (defn ignore-protocol-version [version]
   (reset! protocol-version version))
 
-(defn- connection-serve [conn opts]
+(defn- connection-serve [conn]
   (let [control
         (dothread-swank
           (thread-set-name "Swank Control Thread")
           (try
-           (control-loop conn opts)
+           (control-loop conn)
            (catch Exception e
              ;; fail silently
              nil))
@@ -45,6 +45,8 @@
    PORT-FILE. This is the entry point for Emacs."
   [& opts]
   (let [opts (apply hash-map opts)]
+    (dosync
+      (ref-set *color-support?* (:colors? opts false)))
     (setup-server (get opts :port 0)
                   simple-announce
                   connection-serve
