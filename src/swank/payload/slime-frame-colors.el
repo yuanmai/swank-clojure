@@ -1,3 +1,5 @@
+(require 'ansi-color)
+
 (defadvice sldb-insert-frame (around colorize-clj-trace (frame &optional face))
   (progn
     (ad-set-arg 0 (list (sldb-frame.number frame)
