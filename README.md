@@ -77,11 +77,13 @@ install</tt>, then launch the server from the shell:
 If you're using Maven, add this to your pom.xml under the
 \<dependencies\> section:
 
+```xml
     <dependency>
       <groupId>swank-clojure</groupId>
       <artifactId>swank-clojure</artifactId>
       <version>1.3.3</version>
     </dependency>
+```
 
 Then you can launch a swank server like so:
 
@@ -96,9 +98,11 @@ also cannot change the port from Maven; it's hard-coded to 4005.
 You can embed Swank Clojure in your project, start the server from
 within your own code, and connect via Emacs to that instance:
 
-    (ns my-app
-      (:require [swank.swank]))
-    (swank.swank/start-repl) ;; optionally takes a port argument
+```clj
+(ns my-app
+  (:require [swank.swank]))
+(swank.swank/start-server) ;; optionally takes :host/:port keyword args
+```
 
 To make this work in production, swank-clojure needs to be in
 <tt>:dependencies</tt> in project.clj in addition to being installed
@@ -117,10 +121,12 @@ then you have it already. If not, get it
 
 Then add Marmalade as an archive source in your Emacs config:
 
-    (require 'package)
-    (add-to-list 'package-archives
-                 '("marmalade" . "http://marmalade-repo.org/packages/") t)
-    (package-initialize)
+```lisp
+(require 'package)
+(add-to-list 'package-archives
+             '("marmalade" . "http://marmalade-repo.org/packages/") t)
+(package-initialize)
+```
 
 Evaluate that, then run <kbd>M-x package-refresh-contents</kbd> to
 pull in the latest source lists. Then you can do <kbd>M-x
@@ -191,7 +197,9 @@ your configured $PATH. If Emacs can't find `lein`, you may need to
 give it some help. The quickest way is probably to add this elisp to
 your config:
 
-    (setenv "PATH" (shell-command-to-string "echo $PATH"))
+```lisp
+(setenv "PATH" (shell-command-to-string "echo $PATH"))
+```
 
 ## How it Works
 
