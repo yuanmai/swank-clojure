@@ -173,6 +173,12 @@ official CVS version of SLIME is not supported; it often breaks
 compatibility with Clojure. In addition, the `slime-clj` packages are
 incompatible with swank-clojure.
 
+It's possible to have Emacs configured for both Common Lisp and
+Clojure if you defer loading of Slime until it's needed.
+[This issue](https://github.com/technomancy/swank-clojure/issues/66)
+has details on how that is done. It's not possible to have a single
+instance of Emacs connect to both though.
+
 Swank-clojure and SLIME are only tested with GNU Emacs; forks such as
 Aquamacs and XEmacs may work but are not officially supported.
 
