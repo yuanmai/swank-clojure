@@ -228,7 +228,7 @@ lexical scope.
 
 ## TODO
 
-* clj-stacktrace integration
+* unmap-ns command
 * show method argument names in slime inspector (theoretically possible?)
 * show better metadata on functions in inspector
 
