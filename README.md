@@ -91,11 +91,6 @@ Note that due to a bug in clojure-maven-plugin, you currently cannot
 include it as a test-scoped dependency; it must be compile-scoped. You
 also cannot change the port from Maven; it's hard-coded to 4005.
 
-Put this in your Emacs configuration to get syntax highlighting in the
-slime repl:
-
-    (add-hook 'slime-repl-mode-hook 'clojure-mode-font-lock-setup)
-
 ### Embedding
 
 You can embed Swank Clojure in your project, start the server from
@@ -143,6 +138,15 @@ Then you should be able to connect to the swank server you launched:
 It will prompt you for your host (usually localhost) and port. It may
 also warn you that your SLIME version doesn't match your Swank
 version; this should be OK.
+
+To get syntax highlighting in your repl buffer, use this elisp:
+
+```lisp
+(add-hook 'slime-repl-mode-hook
+          (defun clojure-mode-slime-font-lock ()
+            (let (font-lock-mode)
+              (clojure-mode-font-lock-setup))))
+```
 
 ## Troubleshooting
 
