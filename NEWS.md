@@ -1,5 +1,11 @@
 # Swank Clojure NEWS -- history of user-visible changes
 
+## 1.3.4 / 2011-12-27
+
+* Integrate clj-stacktrace with slime debugger buffers.
+* Inspector now supports showing constructors and interfaces on classes.
+* Make `clojure-jack-in` more forgiving of boot-time lein output.
+
 ## 1.3.3 / 2011-10-04
 
 * Load elisp payloads from various jars during jack-in.
