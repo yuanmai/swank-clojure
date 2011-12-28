@@ -6,17 +6,17 @@ Emacs) to connect to Clojure projects.
 
 ## Usage
 
-The simplest way is to just <tt>jack-in</tt> from an existing project
+The simplest way is to just "jack in" from an existing project
 using [Leiningen](http://github.com/technomancy/leiningen):
 
-* Install clojure-mode either from
+* Install `clojure-mode` either from
   [Marmalade](http://marmalade-repo.org) or from
   [git](http://github.com/technomancy/clojure-mode).
-* <tt>lein plugin install swank-clojure 1.3.3</tt>
-* From inside a project, invoke <tt>M-x clojure-jack-in</tt>
+* `lein plugin install swank-clojure 1.3.4`
+* From an Emacs buffer inside a project, invoke `M-x clojure-jack-in`
 
-That's all it takes! There are no extra install steps beyond
-clojure-mode on the Emacs side and the swank-clojure plugin on the
+That's all it takes; there are no extra install steps beyond
+`clojure-mode` on the Emacs side and the `swank-clojure` plugin on the
 Leiningen side. In particular be sure you don't have any other
 versions of Slime installed; see "Troubleshooting" below.
 
@@ -25,7 +25,7 @@ versions of Slime installed; see "Troubleshooting" below.
 Commonly-used SLIME commands:
 
 * **M-.**: Jump to the definition of a var
-* **C-c TAB**: Autocomplete symbol at point
+* **M-TAB** or **C-c TAB**: Autocomplete symbol at point
 * **C-x C-e**: Eval the form under the point
 * **C-c C-k**: Compile the current buffer
 * **C-c C-l**: Load current buffer and force required namespaces to reload
@@ -58,19 +58,19 @@ If you just want a standalone swank server with no third-party
 libraries, you can use the shell wrapper that Leiningen installs for
 you:
 
-    $ lein plugin install swank-clojure 1.3.3
+    $ lein plugin install swank-clojure 1.3.4
     $ ~/.lein/bin/swank-clojure
 
     M-x slime-connect
 
-If you put <tt>~/.lein/bin</tt> on your <tt>$PATH</tt> it's even more
+If you put `~/.lein/bin` on your <tt>$PATH</tt> it's even more
 convenient.
 
 ### Manual Swank in Project
 
 You can also start a swank server by hand from inside your project.
-You'll need to have installed using <tt>lein plugin
-install</tt>, then launch the server from the shell:
+You'll need to have installed using `lein plugin
+install`, then launch the server from the shell:
 
     $ lein swank # you can specify PORT and HOST optionally
 
@@ -81,7 +81,7 @@ If you're using Maven, add this to your pom.xml under the
     <dependency>
       <groupId>swank-clojure</groupId>
       <artifactId>swank-clojure</artifactId>
-      <version>1.3.3</version>
+      <version>1.3.4</version>
     </dependency>
 ```
 
@@ -105,14 +105,16 @@ within your own code, and connect via Emacs to that instance:
 ```
 
 To make this work in production, swank-clojure needs to be in
-<tt>:dependencies</tt> in project.clj in addition to being installed
+`:dependencies` in project.clj in addition to being installed
 as a user-level plugin. If you do this, you can also start the server
-directly from the "java" command-line launcher if you AOT-compile it
-and specify "swank.swank" as your main class.
+directly from the `java` command-line launcher if you're using Clojure
+1.3 or newer:
+
+    $ java -cp my-project-standalone-1.0.0.jar clojure.main -m swank.swank
 
 ## Connecting with SLIME
 
-If you're not using the <tt>M-x clojure-jack-in</tt> method mentioned
+If you're not using the `M-x clojure-jack-in` method mentioned
 above, you'll have to install SLIME yourself. The easiest way is to
 use package.el. If you are using Emacs 24 or the
 [Emacs Starter Kit](http://github.com/technomancy/emacs-starter-kit),
@@ -159,8 +161,8 @@ To get syntax highlighting in your repl buffer, use this elisp:
 Currently having multiple versions of swank-clojure on the classpath
 can cause issues when running `lein swank` or `lein jack-in`. It's
 recommended to not put swank-clojure in your `:dev-dependencies` but
-have users run `lein plugin install` to have it installed globally for
-all projects. This also means that people hacking on your project
+run `lein plugin install` to have it installed globally for all
+projects instead. This also means that people hacking on your project
 won't have to pull it in if they are not Emacs users.
 
 It's also possible for some packages to pull in old versions of
@@ -172,10 +174,13 @@ this problem. Judicious use of `:exclusions` make it work:
    :dependencies [[incanter "1.2.3" :exclusions [swank-clojure]]]
 ```
 
-Currently `M-x clojure-jack-in` expects that `lein jack-in $PORT`
-emits no output other than elisp. If you have hooks causing other
-messages to be emitted or have `:warn-on-reflection` turned on this
-could cause errors bootstrapping.
+Since swank-clojure 1.3.4, having versions of clj-stacktrace older
+than 0.2.4 in your project or user-level plugins will cause `Unable to
+resolve symbol: pst-elem-str` errors. Keep in mind that user-level
+plugins in `~/.lein/plugins` are uberjars in Leiningen 1.x, so it's
+possible that one of your plugins (such as `lein-difftest` before
+version 1.3.7) contains an old clj-stacktrace even if it doesn't have
+its own file there.
 
 Having old versions of SLIME installed either manually or using a
 system-wide package manager like apt-get may cause issues. Also the
@@ -215,7 +220,7 @@ it sends a signal to Emacs to connect to it.
 
 ## Debugger
 
-You can set repl-aware breakpoints using <tt>swank.core/break</tt>.
+You can set repl-aware breakpoints using `swank.core/break`.
 For now, see
 [Hugo Duncan's blog](http://hugoduncan.org/post/2010/swank_clojure_gets_a_break_with_the_local_environment.xhtml)
 for an explanation of this excellent feature.
