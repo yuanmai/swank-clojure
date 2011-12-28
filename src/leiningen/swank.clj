@@ -23,9 +23,9 @@
 (defn- add-jdk-toolsjar-to-classpath
   "CDT requires the JDK's tools.jar and sa-jdi.jar. Add them to the classpath."
   [project]
-  (let [libdir (format "%s/../lib" (System/getProperty "java.home"))
-        f-exists? (fn [path] (.exists (File. path)))
-        extra-cp (filter f-exists? (map #(str libdir "/" %)
+  (let [libdir (File. (File. (System/getProperty "java.home") "..") "lib")
+        f-exists? (fn [f] (.exists f))
+        extra-cp (filter f-exists? (map #(File. libdir %)
                                         ["tools.jar" "sa-jdi.jar"]))
         cp-key :extra-classpath-dirs]
     (assoc project cp-key (apply conj (cp-key project []) extra-cp))))
