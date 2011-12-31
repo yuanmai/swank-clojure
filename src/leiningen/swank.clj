@@ -28,7 +28,9 @@
         extra-cp (filter f-exists? (map #(File. libdir %)
                                         ["tools.jar" "sa-jdi.jar"]))
         cp-key :extra-classpath-dirs]
-    (assoc project cp-key (apply conj (cp-key project []) extra-cp))))
+    (if (seq extra-cp)
+      (assoc project cp-key (apply conj (cp-key project) extra-cp))
+      project)))
 
 (defn swank
   "Launch swank server for Emacs to connect. Optionally takes PORT and HOST."
