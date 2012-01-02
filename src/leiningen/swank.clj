@@ -1,7 +1,7 @@
 (ns leiningen.swank
   "Launch swank server for Emacs to connect."
-  (:use [leiningen.compile :only [eval-in-project]])
-  (:import [java.io File]))
+  (:require [clojure.java.io :as io])
+  (:use [leiningen.compile :only [eval-in-project]]))
 
 (defn swank-form [project port host opts]
   ;; bootclasspath workaround: http://dev.clojure.org/jira/browse/CLJ-673
@@ -9,7 +9,7 @@
     (require '[clojure walk template stacktrace]))
   `(do
      (when-let [is# ~(:repl-init-script project)]
-       (when (.exists (File. (str is#)))
+       (when (.exists (java.io.File. (str is#)))
          (load-file is#)))
      (when-let [repl-init# '~(:repl-init project)]
        (doto repl-init# require in-ns))
@@ -23,14 +23,11 @@
 (defn- add-jdk-toolsjar-to-classpath
   "CDT requires the JDK's tools.jar and sa-jdi.jar. Add them to the classpath."
   [project]
-  (let [libdir (File. (File. (System/getProperty "java.home") "..") "lib")
-        f-exists? (fn [f] (.exists f))
-        extra-cp (filter f-exists? (map #(File. libdir %)
-                                        ["tools.jar" "sa-jdi.jar"]))
-        cp-key :extra-classpath-dirs]
-    (if (seq extra-cp)
-      (assoc project cp-key (apply conj (cp-key project) extra-cp))
-      project)))
+  (let [libdir (io/file (System/getProperty "java.home") "lib")
+        extra-cp (for [j ["tools.jar" "sa-jdi.jar"]
+                       :when (.exists (io/file libdir j))]
+                   (.getAbsolutePath (io/file libdir j)))]
+    (update-in project [:extra-classpath-dirs] concat extra-cp)))
 
 (defn swank
   "Launch swank server for Emacs to connect. Optionally takes PORT and HOST."
