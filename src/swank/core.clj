@@ -227,7 +227,7 @@ values."
 
 (defn sldb-debug [locals thrown id]
   (try
-   (invoke-debugger nil thrown id)
+   (invoke-debugger locals thrown id)
    (catch Throwable t
      (when (and (pos? *sldb-level*)
                 (not (debug-abort-exception? t)))
