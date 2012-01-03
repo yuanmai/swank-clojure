@@ -26,13 +26,15 @@
 (defn- add-cdt-project-args
   "CDT requires the JDK's tools.jar and sa-jdi.jar. Add them to the classpath."
   [project]
-  (let [libdir (io/file (System/getProperty "java.home") ".." "lib")
-        extra-cp (for [j ["tools.jar" "sa-jdi.jar"]
-                       :when (.exists (io/file libdir j))]
-                   (.getAbsolutePath (io/file libdir j)))]
-    (-> project
-        (update-in [:extra-classpath-dirs] concat extra-cp)
-        (update-in [:jvm-opts] conj jvm-opts))))
+  (if (:swank-cdt project true)
+    (let [libdir (io/file (System/getProperty "java.home") ".." "lib")
+          extra-cp (for [j ["tools.jar" "sa-jdi.jar"]
+                         :when (.exists (io/file libdir j))]
+                     (.getAbsolutePath (io/file libdir j)))]
+      (-> project
+          (update-in [:extra-classpath-dirs] concat extra-cp)
+          (update-in [:jvm-opts] conj jvm-opts)))
+    project))
 
 (defn swank
   "Launch swank server for Emacs to connect. Optionally takes PORT and HOST."
