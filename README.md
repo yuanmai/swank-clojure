@@ -231,11 +231,17 @@ that includes support for stepping, seting breakpoints, catching
 exceptions, and eval clojure expressions in the context of the current
 lexical scope.
 
+Note that the CDT does not work with `:eval-in-leiningen` without
+extra manual configuration.
+
 ## TODO
 
 * unmap-ns command
 * show method argument names in slime inspector (theoretically possible?)
 * show better metadata on functions in inspector
+* offer restarts for class/var not found exceptions (slamhound integration?)
+* add elisp payload for cdt commands
+* suppress false "warning: unabled to add tools.jar to classpath" message
 
 ## Community
 
