@@ -3,11 +3,11 @@
   (:require [cdt.ui :as cdt]
             [swank.core.cdt-utils :as cutils]
             [swank.core :as core]
-            [swank.util.concurrent.thread :as st])
+            [swank.util.concurrent.thread :as st]
+            [clj-stacktrace repl core])
   (:use swank.core.debugger-backends
         [swank.commands :only [defslimefn]])
   (:import java.util.concurrent.TimeUnit))
-
 
 (defmethod swank-eval :cdt [form]
   (cdt/safe-reval (:thread @*debugger-env*)
@@ -23,10 +23,18 @@
           (select-keys @*debugger-env* [:thread :frame]))
   (nth (get-full-stack-trace) n))
 
+;; (defmethod exception-stacktrace :cdt [_]
+;;   (map #(list %1 %2 '(:restartable nil))
+;;        (iterate inc 0)
+;;        (map str (get-full-stack-trace))))
+
 (defmethod exception-stacktrace :cdt [_]
-  (map #(list %1 %2 '(:restartable nil))
-       (iterate inc 0)
-       (map str (get-full-stack-trace))))
+  (let [width 25   ;; @@ TODO: hard-coded for now as below does not work:
+        #_(clj-stacktrace.repl/find-source-width
+           (clj-stacktrace.core/parse-exception t))]
+    (map #(list %1 %2 '(:restartable nil))
+         (iterate inc 0)
+         (map #(core/exception-str width %) (get-full-stack-trace)))))
 
 (defmethod debugger-condition-for-emacs :cdt []
   (:env @*debugger-env*))
