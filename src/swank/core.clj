@@ -298,7 +298,8 @@ values."
            (if debug-swank-clojure t (or (.getCause t) t))
            id)
           ;; reply with abort
-          (finally (send-to-emacs `(:return ~(thread-name (current-thread)) (:abort) ~id)))))))))
+          (finally (send-to-emacs
+                    `(:return ~(thread-name (current-thread)) (:abort) ~id)))))))))
 
 (defn- add-active-thread [thread]
   (dosync
