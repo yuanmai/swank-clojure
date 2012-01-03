@@ -156,6 +156,10 @@ To get syntax highlighting in your repl buffer, use this elisp:
               (clojure-mode-font-lock-setup))))
 ```
 
+To get colors in stack traces, load the elisp in
+`src/swank/payload/slime-compile-presave.el` inside Emacs and use
+`lein swank $PORT localhost :colors? true` to launch the swank server.
+
 ## Troubleshooting
 
 Currently having multiple versions of swank-clojure on the classpath
