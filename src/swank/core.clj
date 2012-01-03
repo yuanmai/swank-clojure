@@ -3,9 +3,9 @@
   (:use (swank util commands)
         (swank.util hooks)
         (swank.util.concurrent thread)
-        (swank.core connection hooks threadmap debugger-backends)
-        (clj-stacktrace core repl))
-  (:require (swank.util.concurrent [mbox :as mb])))
+        (swank.core connection hooks threadmap debugger-backends))
+  (:require (swank.util.concurrent [mbox :as mb])
+            (clj-stacktrace core repl)))
 
 ;; Protocol version
 (defonce protocol-version (atom "20100404"))
@@ -125,11 +125,13 @@ values."
 (defn- debug-invalid-restart-exception? [t]
   (some #(identical? debug-invalid-restart-exception %) (exception-causes t)))
 
-(defn- exception-str [width elem]
-  (pst-elem-str @color-support? (parse-trace-elem elem) width))
+(defn exception-str [width elem]
+  (clj-stacktrace.repl/pst-elem-str
+   @color-support? (clj-stacktrace.core/parse-trace-elem elem) width))
 
 (defmethod exception-stacktrace :default [t]
-  (let [width (find-source-width (parse-exception t))]
+  (let [width (clj-stacktrace.repl/find-source-width
+               (clj-stacktrace.core/parse-exception t))]
     (map #(list %1 %2 '(:restartable nil))
          (iterate inc 0)
          (map #(exception-str width %) (.getStackTrace t)))))
