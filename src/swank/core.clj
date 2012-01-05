@@ -134,10 +134,10 @@ values."
                (clj-stacktrace.core/parse-exception t))]
     (map #(list %1 %2 '(:restartable nil))
          (iterate inc 0)
-         (map #(exception-str width %) (.getStackTrace t)))))
+         (map #(exception-str width %) (.getStackTrace #^Throwable t)))))
 
 (defmethod debugger-condition-for-emacs :default []
-  (list (or (.getMessage *current-exception*) "No message.")
+  (list (or (.getMessage #^Throwable *current-exception*) "No message.")
         (str "  [Thrown " (class *current-exception*) "]")
         nil))
 
@@ -150,7 +150,7 @@ values."
     restarts))
 
 (declare sldb-debug)
-(defn cause-restart-for [thrown depth]
+(defn cause-restart-for [#^Throwable thrown depth]
   (make-restart
    (keyword (str "cause" depth))
    (str "CAUSE" depth)
@@ -160,7 +160,7 @@ values."
         " [Thrown " (class thrown) "]")
    (partial sldb-debug nil thrown *pending-continuations*)))
 
-(defn add-cause-restarts [restarts thrown]
+(defn add-cause-restarts [restarts #^Throwable thrown]
   (loop [restarts restarts
          cause (.getCause thrown)
          level 1]
@@ -171,9 +171,9 @@ values."
        (inc level))
       restarts)))
 
-(defmethod calculate-restarts :default [thrown]
+(defmethod calculate-restarts :default [#^Throwable thrown]
   (let [restarts [(make-restart :quit "QUIT" "Quit to the SLIME top level"
-                               (fn [] (throw debug-quit-exception)))]
+                                (fn [] (throw debug-quit-exception)))]
         restarts (add-restart-if
                   (pos? *sldb-level*)
                   restarts
@@ -427,7 +427,7 @@ values."
            (eval (with-env-locals form)))
 
 (defmethod get-stack-trace :default [n]
-           (nth (.getStackTrace *current-exception*) n))
+  (nth (.getStackTrace #^Throwable *current-exception*) n))
 
 (defmethod handled-exception? :default [t]
            (debug-continue-exception? t))

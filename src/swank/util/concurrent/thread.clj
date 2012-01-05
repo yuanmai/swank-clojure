@@ -1,5 +1,6 @@
 (ns swank.util.concurrent.thread
-  (:use (swank util)))
+  (:use (swank util))
+  (:import (java.lang.Thread)))
 
 (def #^{:dynamic true} *new-thread-group* nil)
 

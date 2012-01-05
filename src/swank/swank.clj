@@ -8,7 +8,7 @@
   (:require [swank.commands]
             [swank.commands basic indent completion
              contrib inspector])
-  (:import [java.lang System]
+  (:import [java.lang System Thread]
            [java.io File])
   (:gen-class))
 
@@ -16,7 +16,7 @@
   (reset! protocol-version version))
 
 (defn- connection-serve [conn]
-  (let [control
+  (let [#^Thread control
         (dothread-swank
           (thread-set-name "Swank Control Thread")
           (try
@@ -61,14 +61,15 @@
                   connection-serve
                   opts)
     (when (:block opts)
-      (doseq [t (get-thread-list)]
+      (doseq [#^Thread t (get-thread-list)]
          (.join t)))))
 
 (defn start-repl
   "Start the server wrapped in a repl. Use this to embed swank in your code."
   ([port & opts]
      (let [stop (atom false)
-           opts (assoc (apply hash-map opts) :port (Integer. port))]
+           port (if (string? port) (Integer/parseInt port) (int port))
+           opts (assoc (apply hash-map opts) :port port)]
        (repl :read (fn [rprompt rexit]
                      (if @stop rexit
                          (do (reset! stop true)
