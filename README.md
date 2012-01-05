@@ -157,7 +157,7 @@ To get syntax highlighting in your repl buffer, use this elisp:
 ```
 
 To get colors in stack traces, load the elisp in
-`src/swank/payload/slime-compile-presave.el` inside Emacs and use
+`src/swank/payload/slime-frame-colors.el` inside Emacs and use
 `lein swank $PORT localhost :colors? true` to launch the swank server.
 
 ## Troubleshooting
@@ -184,7 +184,12 @@ resolve symbol: pst-elem-str` errors. Keep in mind that user-level
 plugins in `~/.lein/plugins` are uberjars in Leiningen 1.x, so it's
 possible that one of your plugins (such as `lein-difftest` before
 version 1.3.7) contains an old clj-stacktrace even if it doesn't have
-its own file there.
+its own file there. Specifying a newer version should be enough if
+you're having trouble:
+
+```clj
+    :dependencies [[clj-stacktrace "0.2.4"]]
+```
 
 Having old versions of SLIME installed either manually or using a
 system-wide package manager like apt-get may cause issues. Also the
