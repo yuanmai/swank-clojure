@@ -366,10 +366,10 @@ values."
        (continuously (mb/send control (read-from-connection conn))))))
 
 (defn dispatch-event
-   "Dispatches/executes an event in the control thread's mailbox queue."
-   ([ev conn]
-      (let [[action & args] ev]
-        (cond
+  "Dispatches/executes an event in the control thread's mailbox queue."
+  ([ev conn]
+     (let [[action & args] ev]
+       (cond
          (= action :emacs-rex)
          (let [[form-string package thread id] args
                thread (thread-for-evaluation thread conn)]
