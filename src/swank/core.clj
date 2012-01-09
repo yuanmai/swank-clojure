@@ -511,26 +511,28 @@ values."
        (with-connection conn
          (continuously (dispatch-event (mb/receive (current-thread)) conn))))))
 
+;;; default implementations of some core multimethods
 (defmethod eval-string-in-frame :default [expr n]
   (if (and (zero? n) *current-env*)
     (with-bindings *current-env*
       (eval expr))))
 
 (defmethod swank-eval :default [form]
-           (eval (with-env-locals form)))
+  (eval (with-env-locals form)))
 
 (defmethod get-stack-trace :default [n]
   (nth (.getStackTrace #^Throwable *current-exception*) n))
 
 (defmethod handled-exception? :default [t]
-           (debug-continue-exception? t))
+  (debug-continue-exception? t))
 
 (defmethod debugger-exception? :default [t]
-           false)
+  false)
 
 (defmethod handle-interrupt :default [thread conn args]
-           (dosync
-            (cond
-             (and (true? thread) (seq @active-threads))
-             (.stop #^Thread (first @active-threads))
-             (= thread :repl-thread) (.stop #^Thread @(conn :repl-thread)))))
+  (dosync
+   (cond
+     (and (true? thread) (seq @active-threads))
+     (.stop #^Thread (first @active-threads))
+
+     (= thread :repl-thread) (.stop #^Thread @(conn :repl-thread)))))
