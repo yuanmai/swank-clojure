@@ -396,7 +396,10 @@ values."
   until that the result of the eval is available.
 
   Unlike `eval-in-emacs-async`, this function unwraps the slime-proto
-  return value and cleans up the promise used ."
+  return value and cleans up the promise used .
+
+  NOTE: you must (setq slime-enable-evaluate-in-emacs t) on the Emacs
+  side before calling this function."
 
   [formstring]
 
@@ -420,7 +423,10 @@ values."
 
   Callers of this function are responsible for calling
   (clear-emacs-return-promise thread tag) after they have retrieved
-  the return value from the promise."
+  the return value from the promise.
+
+  NOTE: you must (setq slime-enable-evaluate-in-emacs t) on the Emacs
+  side before calling this function."
 
   [formstring thread tag]
   (let [p (create-emacs-return-promise thread tag)]
