@@ -367,9 +367,9 @@ values."
 
 (defmacro with-read-line-support
   "Rebind `read-line` to work within slime."
-  [body]
+  [& body]
   `(binding [read-line read-line-from-emacs]
-     ~body))
+     ~@body))
 
 ;; Handle control
 
