@@ -357,7 +357,22 @@ values."
       (= id :repl-thread) (find-or-spawn-repl-thread conn)
       :else (find-thread id))))
 
+
+;;; read-line support
+(defonce pending-read-line-promise (atom (promise)))
+(defn read-line-from-emacs []
+  (swap! pending-read-line-promise (fn [_] (promise)))
+  (send-to-emacs `(:read-string :repl-thread "repl-read-line"))
+  (deref (deref pending-read-line-promise)))
+
+(defmacro with-read-line-support
+  "Rebind `read-line` to work within slime."
+  [body]
+  `(binding [read-line read-line-from-emacs]
+     ~body))
+
 ;; Handle control
+
 (defn read-loop
   "A loop that reads from the socket (will block when no message
    available) and dispatches the message to the control thread."
@@ -396,6 +411,13 @@ values."
 
          (= action :write-string)
          (write-to-connection conn ev)
+
+         (= action :read-string)
+         (write-to-connection conn ev)
+
+         (= action :emacs-return-string)
+         (let [[_thread _tag string] args]
+           (deliver (deref pending-read-line-promise) string))
 
          (one-of? action
                   :debug :debug-condition :debug-activate :debug-return)
