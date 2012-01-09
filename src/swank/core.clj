@@ -358,12 +358,77 @@ values."
       :else (find-thread id))))
 
 
-;;; read-line support
-(defonce pending-read-line-promise (atom (promise)))
+;;; slime proto :emacs-return support and the swank commands
+;;; that depend on it: :eval :read-from-minibuffer :y-or-n-p :read-string
+
+(defonce emacs-return-promises (atom {}))
+
+(defn- create-emacs-return-promise [thread tag]
+  (let [p (promise)]
+    (swap! emacs-return-promises
+           (fn [promise-map]
+             (assoc promise-map [thread tag] p)))
+    p))
+
+(defn- clear-emacs-return-promise [thread tag]
+  (swap! emacs-return-promises
+         (fn [promise-map] (dissoc promise-map [thread tag]))))
+
+(defn- deliver-emacs-return-promise [thread tag val]
+  (let [p (@emacs-return-promises [thread tag])]
+    (if p
+      (deliver p val))))
+
+(defn- send-slime-command-to-emacs-and-wait [slime-command & args]
+  (assert (#{:eval :read-from-minibuffer
+             :y-or-n-p :read-string}
+           slime-command))
+  (let [thread (thread-name (current-thread))
+        tag (str (java.util.UUID/randomUUID))
+        p (create-emacs-return-promise thread tag)]
+    (send-to-emacs `(~slime-command ~thread ~tag ~@args))
+    (let [retval @p]
+      (clear-emacs-return-promise thread tag)
+      retval)))
+
+(defn eval-in-emacs
+  "Sends an elisp `formstring` to slime for evaluation and blocks
+  until that the result of the eval is available.
+
+  Unlike `eval-in-emacs-async`, this function unwraps the slime-proto
+  return value and cleans up the promise used ."
+
+  [formstring]
+
+  (let [retval (send-slime-command-to-emacs-and-wait :eval formstring)]
+    (case (first retval)
+      :ok (second retval)
+      :abort (throw (Exception. "Emacs eval abort")))))
+
+(defn eval-in-emacs-async
+  "Sends an elisp `formstring` to slime for evaluation and immediately
+  returns a promise that the result of the eval will be delivered to
+  eventually.
+
+  The value delivered to the promise is either (:ok retval)
+  or (:abort) if there was any error.
+
+  The `thread` argument should be the thread name or id. The `tag`
+  argument is an arbitrary string identifier used to address the
+  return value from emacs to the correct promise. UUID's are a good
+  option.
+
+  Callers of this function are responsible for calling
+  (clear-emacs-return-promise thread tag) after they have retrieved
+  the return value from the promise."
+
+  [formstring thread tag]
+  (let [p (create-emacs-return-promise thread tag)]
+    (send-to-emacs `(:eval ~thread ~tag ~formstring))
+    p))
+
 (defn read-line-from-emacs []
-  (swap! pending-read-line-promise (fn [_] (promise)))
-  (send-to-emacs `(:read-string :repl-thread "repl-read-line"))
-  (deref (deref pending-read-line-promise)))
+  (send-slime-command-to-emacs-and-wait :read-string))
 
 (defmacro with-read-line-support
   "Rebind `read-line` to work within slime."
@@ -405,7 +470,8 @@ values."
                   :presentation-start :presentation-end
                   :new-package :new-features :ed :percent-apply
                   :indentation-update
-                  :eval-no-wait :background-message :inspect)
+                  :eval :eval-no-wait :background-message :inspect
+                  :read-from-minibuffer :y-or-n-p)
          (binding [*print-level* nil, *print-length* nil]
            (write-to-connection conn ev))
 
@@ -415,9 +481,8 @@ values."
          (= action :read-string)
          (write-to-connection conn ev)
 
-         (= action :emacs-return-string)
-         (let [[_thread _tag string] args]
-           (deliver (deref pending-read-line-promise) string))
+         (one-of? action :emacs-return :emacs-return-string)
+         (apply deliver-emacs-return-promise args)  ; args = [thread tag val]
 
          (one-of? action
                   :debug :debug-condition :debug-activate :debug-return)
