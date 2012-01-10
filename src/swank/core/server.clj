@@ -25,7 +25,8 @@
 
    See also: `accept-authenticated-connection'"
   ([] (failing-gracefully
-        (let [slime-secret-file (File. (str (user-home-path) File/separator ".slime-secret"))]
+        (let [slime-secret-file (File.
+                                 (str (user-home-path) File/separator ".slime-secret"))]
           (when (and (.isFile slime-secret-file) (.canRead slime-secret-file))
             (with-open [secret (BufferedReader. (FileReader. slime-secret-file))]
               (.readLine secret)))))))
@@ -104,4 +105,3 @@
 ;; Announcement functions
 (defn simple-announce [{:keys [message host port] :as opts}]
   (println (or message (format "Connection opened on %s port %s." host port))))
-
