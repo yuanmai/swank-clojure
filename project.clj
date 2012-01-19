@@ -6,6 +6,7 @@
                  [cdt "1.2.6.2-SNAPSHOT"]]
   :dev-dependencies [[lein-multi "1.0.0"]]
   :multi-deps {"1.3" [[org.clojure/clojure "1.3.0"]
-                      [clj-stacktrace "0.2.4"]]}
+                      [clj-stacktrace "0.2.4"]
+                      [cdt "1.2.6.2-SNAPSHOT"]]}
   :warn-on-reflection true
   :shell-wrapper {:main swank.swank})
