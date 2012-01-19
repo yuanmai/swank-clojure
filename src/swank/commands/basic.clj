@@ -413,9 +413,10 @@ that symbols accessible in the current namespace go first."
       (slime-file-resource resource))))
 
 (defn- slime-find-file [#^String file]
-  (if (.isAbsolute (File. file))
-    (list :file file)
-    (slime-find-resource file)))
+  (if file
+    (if (.isAbsolute (File. file))
+      (list :file file)
+      (slime-find-resource file))))
 
 (defn- namespace-to-path [ns]
   (let [#^String ns-str (name (ns-name ns))
@@ -482,6 +483,7 @@ that symbols accessible in the current namespace go first."
       (location ns nil path 1))))
 
 (defn- find-var-definition [sym-name]
+  ;; TODO this doesn't work if sym-name refers to a protocol function
   (if-let [meta (meta (maybe-resolve-sym sym-name))]
     (source-location-for-meta meta "defn")))
 
