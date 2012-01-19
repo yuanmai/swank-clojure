@@ -6,7 +6,7 @@
         (swank.clj-contrib pprint macroexpand))
   (:require (swank.util [sys :as sys])
             [swank.core.debugger-backends :as dbe]
-            ;; (swank.commands [xref :as xref])
+            [clojure.string]
             )
   (:import
    (java.lang.ThreadGroup)
