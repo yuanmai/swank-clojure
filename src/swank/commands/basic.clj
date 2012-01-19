@@ -6,11 +6,16 @@
         (swank.clj-contrib pprint macroexpand))
   (:require (swank.util [sys :as sys])
             [swank.core.debugger-backends :as dbe]
-            (swank.commands [xref :as xref]))
-  (:import (java.io StringReader File)
-           (java.util.zip ZipFile)
-           (java.lang.ThreadGroup)
-           (clojure.lang LineNumberingPushbackReader Symbol)))
+            ;; (swank.commands [xref :as xref])
+            )
+  (:import
+   (java.lang.ThreadGroup)
+   (java.util.jar JarFile)
+   (java.io File StringReader
+            FileInputStream LineNumberReader
+            InputStreamReader Reader PushbackReader)
+
+   (clojure.lang LineNumberingPushbackReader Symbol)))
 
 ;;;; Connection
 
@@ -486,30 +491,137 @@ that symbols accessible in the current namespace go first."
         (find-ns-definition sym-name)
         (location name nil nil nil))))
 
-(defn who-specializes [class]
-  (letfn [(xref-lisp [sym] ; see find-definitions-for-emacs
-                     (if-let [meta (meta sym)]
-                       (source-location-for-meta meta "method")
-                       (location-not-found (name sym) "method")))]
-    (let [methods (try (. #^java.lang.Class class getMethods)
-                       (catch java.lang.IllegalArgumentException e nil)
-                       (catch java.lang.NullPointerException e nil))]
-      (map xref-lisp methods))))
+;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; xref who-calls support (was in xref.clj)
+(defn- get-jar-entry-as-stream [^String jarpath ^String entry-name]
+  (let [jarfile (JarFile. jarpath)]
+    (.getInputStream jarfile (.getEntry jarfile entry-name))))
+
+(defn- get-resource-stream [filepath]
+  (if-let [location (slime-find-file filepath)]
+    (case (first location)
+      :zip (apply get-jar-entry-as-stream (rest location))
+      :file (java.io.FileInputStream. ^String (second location)))))
+
+(defn- get-source-from-var
+  "Returns a string of the source code for the given symbol, if it can
+find it. This requires that the symbol resolve to a Var defined in
+a namespace for which the .clj is in the classpath. Returns nil if
+it can't find the source.
+Example: (get-source-from-var 'filter)"
+  [v]
+  (when-let [filepath (:file (meta v))]
+    (when-let [strm (get-resource-stream filepath)]
+      (with-open [rdr (LineNumberReader. (InputStreamReader. strm))]
+        (dotimes [_ (dec (:line (meta v)))] (.readLine rdr))
+        (let [text (StringBuilder.)
+              pbr (proxy [PushbackReader] [rdr]
+                    (read [] (let [#^Reader this this
+                                   i (proxy-super read)]
+                               (.append text (char i))
+                               i)))]
+          (read (PushbackReader. pbr))
+          (str text))))))
+
+(defn- recursive-contains? [coll obj]
+  "True if coll contains obj. Obj can't be a seq"
+  (not (empty? (filter #(= obj %) (flatten coll)))))
+
+(defn- does-var-call-fn [var fn]
+  "Checks if a var calls a function named 'fn"
+  (if-let [source (get-source-from-var var)]
+    (let [node (read-string source)]
+     (if (recursive-contains? node fn)
+       var
+       false))))
+
+(defn- does-ns-refer-to-var? [ns var]
+  (ns-resolve ns var))
+
+(defn- all-vars-who-call [sym]
+  (filter
+   ifn?
+   (filter identity
+           (map #(does-var-call-fn % sym)
+                (flatten
+                 (map vals
+                      (map ns-interns
+                           (filter #(does-ns-refer-to-var? % sym)
+                                   (all-ns)))))))))
 
 (defn who-calls [name]
   (letfn [(xref-lisp [sym-var]        ; see find-definitions-for-emacs
                      (when-let [meta (meta sym-var)]
                        (source-location-for-meta meta nil)))]
-    (let [callers (xref/all-vars-who-call name) ]
+    (let [callers (all-vars-who-call name) ]
       (map first (map xref-lisp callers)))))
+
+(defn- get-line-no-from-defmethod
+  ;; TODO this is very simplistic at the moment and relies on a
+  ;; brittle regex
+  [multifn-name dispatch-val ns]
+  (let [filepath (namespace-to-filename ns)
+        re (re-pattern (str "defmethod *" multifn-name " *" dispatch-val))]
+    (when-let [strm (get-resource-stream filepath)]
+      (with-open [rdr (LineNumberReader. (InputStreamReader. strm))]
+        (loop []
+          (if-let [ln (.readLine rdr)]
+            (if (re-find re ln)
+              (location (str multifn-name " " dispatch-val)
+                        "defmethod"
+                        (slime-find-file filepath)
+                        (.getLineNumber rdr))
+              (recur))))
+        #_(loop [results []]
+          (if-let [ln (.readLine rdr)]
+            (if (re-find re ln)
+              (recur (conj results
+                           (location multifn-name "defmulti"
+                                     (slime-find-file filepath)
+                                     (.getLineNumber rdr))))
+              (recur results))
+            results))))))
+
+(defn- all-ns-who-defmulti [multifn]
+  (for [[dispatch-val m] (methods multifn)]
+    (let [ns-nm (-> m str (clojure.string/split #"\$") first)
+          ns-nm-v2 (clojure.string/replace ns-nm "_" "-")]
+      [dispatch-val (some (fn [ns]
+                            (let [nm (-> ns ns-name str)]
+                              (if (or (= ns-nm nm)
+                                      (= ns-nm-v2 nm)) ns)))
+                          (all-ns))])))
+
+(defn who-specializes-multifn [multifn-var]
+  (let [multifn-name (:name (meta multifn-var))]
+    (map first (filter seq
+            (for [[dispatch-val ns] (all-ns-who-defmulti @multifn-var)]
+              (filter identity (get-line-no-from-defmethod
+                                multifn-name dispatch-val ns)))))))
+
+(defn who-specializes [class]
+  ;; this appears to be broken
+  ;; TODO make it work for multimethod
+  ;; (map ns-name (all-ns))
+
+  (letfn [(xref-lisp [sym] ; see find-definitions-for-emacs
+            (if-let [meta (meta sym)]
+              (source-location-for-meta meta "method")
+              (location-not-found (name sym) "method")))]
+    (let [methods (try (. #^java.lang.Class class getMethods)
+                       (catch java.lang.IllegalArgumentException e nil)
+                       (catch java.lang.NullPointerException e nil))]
+      (map xref-lisp methods))))
 
 (defslimefn xref [type name]
   (let [sexp (maybe-resolve-sym name)]
-       (condp = type
-              :specializes (who-specializes sexp)
-              :calls   (who-calls (symbol name))
-              :callers nil
-              :not-implemented)))
+    (condp = type
+      :specializes (who-specializes-multifn sexp) ;; (who-specializes sexp)
+      :calls   (who-calls (symbol name))
+      :callers nil
+      :not-implemented)))
+
+;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defslimefn throw-to-toplevel []
   (throw debug-quit-exception))
