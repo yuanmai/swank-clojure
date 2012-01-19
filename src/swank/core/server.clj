@@ -31,11 +31,14 @@
             (with-open [secret (BufferedReader. (FileReader. slime-secret-file))]
               (.readLine secret)))))))
 
-(defn- make-output-redirection
-  ([conn]
-     (call-on-flush-stream
-      #(with-connection conn
-         (send-to-emacs `(:write-string ~%)))))
+(defn make-output-redirection
+  ([conn & slime-output-target]
+     (let [slime-output-target (if slime-output-target
+                                 (first slime-output-target))]
+       (call-on-flush-stream
+        #(with-connection conn
+           (send-to-emacs `(:write-string ~% ~slime-output-target)))))
+     )
   {:tag java.io.StringWriter})
 
 ;; rename to authenticate-socket, takes in a connection
