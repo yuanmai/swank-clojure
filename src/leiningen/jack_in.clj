@@ -37,10 +37,28 @@
         (io/copy r elisp-file))
       (with-open [w (io/writer elisp-file :append true)]
         (.write w (format "\n(provide '%s-%s)\n" feature checksum))))
-    (format "(when (not (featurep '%s-%s))
-               (if (file-readable-p \"%s\")
-                 (load-file \"%s\")
-               (byte-compile-file \"%s\" t)))"
+    (format "
+
+;;; This is going to be needed for loading remote elisp files
+;;; if we can figure out how to avoid the 'cannot load docstring file' 
+;;; error it currently raises.
+;; (defun clojure-mode-maybe-remote-filename (f)
+;;   (interactive)
+;;   (if (file-remote-p default-directory)
+;;     (tramp-make-tramp-file-name
+;;      (tramp-file-name-method
+;;       (tramp-dissect-file-name default-directory))
+;;      (tramp-file-name-user
+;;       (tramp-dissect-file-name default-directory))
+;;      (tramp-file-name-host
+;;       (tramp-dissect-file-name default-directory))
+;;      f)
+;;     f))
+
+(when (not (or (featurep '%s-%s) (file-remote-p default-directory)))
+  (if (file-readable-p \"%s\")
+      (load-file \"%s\")
+    (byte-compile-file \"%s\" t)))"
             feature checksum bytecode bytecode elisp)))
 
 (defn payload-loaders []
@@ -52,13 +70,14 @@
 
 This task is intended to be launched from Emacs using M-x clojure-jack-in,
 which is part of the clojure-mode library."
-  [project port]
-  (println ";;; Bootstrapping bundled version of SLIME; please wait...\n\n")
-  (let [loaders (string/join "\n" (payload-loaders))
-        colors? (.contains loaders "slime-frame-colors")]
-    (println loaders)
-    (println "(sleep-for 0.1)") ; TODO: remove
-    (println "(run-hooks 'slime-load-hook) ; on port" port)
-    (println ";;; Done bootstrapping.")
-    (swank project port "localhost" ":colors?" (str colors?)
-           ":message" "\";;; proceed to jack in\"")))
+  ([project port] (jack-in project port "localhost"))
+  ([project port hostname]
+     (println ";;; Bootstrapping bundled version of SLIME; please wait...\n\n")
+     (let [loaders (string/join "\n" (payload-loaders))
+           colors? (.contains loaders "slime-frame-colors")]
+       (println loaders)
+       (println "(sleep-for 0.1)") ; TODO: remove
+       (println "(run-hooks 'slime-load-hook) ; on port" port)
+       (println ";;; Done bootstrapping.")
+       (swank project port hostname ":colors?" (str colors?)
+              ":message" "\";;; proceed to jack in\""))))
