@@ -189,12 +189,16 @@
 
 ;;;; Describe
 
-(defn- maybe-resolve-sym [symbol-name]
+(defn- maybe-resolve-sym
+  "Returns a Var or nil"
+  [symbol-name]
   (try
     (ns-resolve (maybe-ns *current-package*) (symbol symbol-name))
     (catch ClassNotFoundException e nil)))
 
-(defn- maybe-resolve-ns [sym-name]
+(defn- maybe-resolve-ns
+  "Returns a Namespace or nil"
+  [sym-name]
   (let [sym (symbol sym-name)]
     (or ((ns-aliases (maybe-ns *current-package*)) sym)
         (find-ns sym))))
@@ -347,37 +351,37 @@ that symbols accessible in the current namespace go first."
   (dotimes [x (+ 1 num)]
     (print "  ")))
 
-(defn- trace-fn-call [sym f args]
-  (let [fname (symbol (str (namespace sym) "/" (name sym)))
-        ;; what is the point of this?
-        ]
-    (indent *trace-level*)
+(defn- trace-fn-call [fn-sym f args]
+  (indent *trace-level*)
     (println (str *trace-level* ":")
-             (apply str (take 240 (pr-str (when fname (cons fname args)) ))))
+             (apply str (take 240 (pr-str (when fn-sym (cons fn-sym args)) ))))
     (let [result (binding [*trace-level* (+ *trace-level* 1)] (apply f args))]
       (indent *trace-level*)
       (println (str *trace-level* ": "
-                    fname " returned " (apply str (take 240 (pr-str result)))))
-      result)))
+                    fn-sym " returned "
+                    (apply str (take 240 (pr-str result)))))
+      result))
 
-(defslimefn swank-toggle-trace [fname]
-  (when-let [sym (maybe-resolve-sym fname)]
-    (if-let [f# (get traced-fn-map sym)]
+(defslimefn swank-toggle-trace [#^String fname]
+  (when-let [f-var (maybe-resolve-sym fname)
+             ]
+    (if-let [f# (get traced-fn-map f-var)]
       (do
-        (alter-var-root #'traced-fn-map dissoc sym)
-        (alter-var-root sym (constantly f#))
+        (alter-var-root #'traced-fn-map dissoc f-var)
+        (alter-var-root f-var (constantly f#))
         (str " untraced."))
-      (let [f# @sym]
-        (alter-var-root #'traced-fn-map assoc sym f#)
-        (alter-var-root sym
+      (let [f# @f-var]
+        (alter-var-root #'traced-fn-map assoc f-var f#)
+        (alter-var-root f-var
                         (constantly
                          (fn [& args]
-                           (trace-fn-call sym f# args))))
+                           (trace-fn-call (symbol fname) f# args))))
         (str " traced.")))))
 
 (defslimefn untrace-all []
-  (doseq [sym (keys traced-fn-map)]
-    (swank-toggle-trace (symbol sym))))
+  (doseq [f-var (keys traced-fn-map)]
+    (let [fname (str (:ns (meta f-var)) "/" (:name (meta f-var)))]
+      (swank-toggle-trace fname))))
 
 ;;;; Source Locations
 (comment
