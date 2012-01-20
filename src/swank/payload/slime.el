@@ -3404,7 +3404,7 @@ Returns nil if both fails."
       (goto-char (point-min)))
      ((:zip file entry)
       (require 'arc-mode)
-      (set-buffer (find-file-noselect file t))
+      (set-buffer (find-file-noselect (slime-from-lisp-filename file) t))
       (goto-char (point-min))
       (re-search-forward (concat "  " entry "$"))
       (let ((buffer (save-window-excursion
