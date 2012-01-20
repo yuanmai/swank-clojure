@@ -38,23 +38,27 @@
       (with-open [w (io/writer elisp-file :append true)]
         (.write w (format "\n(provide '%s-%s)\n" feature checksum))))
     (format "
-(defun clojure-mode-maybe-remote-filename (f)
-  (interactive)
-  (if (file-remote-p default-directory)
-    (tramp-make-tramp-file-name
-     (tramp-file-name-method
-      (tramp-dissect-file-name default-directory))
-     (tramp-file-name-user
-      (tramp-dissect-file-name default-directory))
-     (tramp-file-name-host
-      (tramp-dissect-file-name default-directory))
-     f)
-    f))
 
-(when (not (featurep '%s-%s))
-  (if (file-readable-p (clojure-mode-maybe-remote-filename \"%s\"))
-    (load-file (clojure-mode-maybe-remote-filename \"%s\"))
-    (byte-compile-file (clojure-mode-maybe-remote-filename \"%s\" t))))"
+;;; This is going to be needed for loading remote elisp files
+;;; if we can figure out how to avoid the 'cannot load docstring file' 
+;;; error it currently raises.
+;; (defun clojure-mode-maybe-remote-filename (f)
+;;   (interactive)
+;;   (if (file-remote-p default-directory)
+;;     (tramp-make-tramp-file-name
+;;      (tramp-file-name-method
+;;       (tramp-dissect-file-name default-directory))
+;;      (tramp-file-name-user
+;;       (tramp-dissect-file-name default-directory))
+;;      (tramp-file-name-host
+;;       (tramp-dissect-file-name default-directory))
+;;      f)
+;;     f))
+
+(when (not (or (featurep '%s-%s) (file-remote-p default-directory)))
+  (if (file-readable-p \"%s\")
+      (load-file \"%s\")
+    (byte-compile-file \"%s\" t)))"
             feature checksum bytecode bytecode elisp)))
 
 (defn payload-loaders []
