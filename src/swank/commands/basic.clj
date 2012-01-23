@@ -415,6 +415,8 @@ that symbols accessible in the current namespace go first."
      (System/setProperty "user.dir" directory)
      directory))
 
+(defslimefn default-directory
+  ([] (System/getProperty "user.dir")))
 
 ;;;; meta dot find
 
