@@ -214,6 +214,27 @@ your config:
 ```lisp
 (setenv "PATH" (shell-command-to-string "echo $PATH"))
 ```
+## Cygwin
+
+If you are running Emacs from Cygwin you'll need to add the following to your 
+.emacs.d/init.el file:
+
+```lisp
+(defun cyg-slime-to-lisp-translation (filename)
+  (replace-regexp-in-string "\n" "" 
+   (shell-command-to-string
+     (format "cygpath.exe --windows %s" filename))))
+
+(defun cyg-lisp-to-slime-translation (filename)
+  (replace-regexp-in-string "\n" "" (shell-command-to-string
+     (format "cygpath.exe --unix %s filename"))))
+
+(setq slime-to-lisp-filename-function #'cyg-slime-to-lisp-translation)
+(setq lisp-to-slime-filename-function #'cyg-lisp-to-slime-translation)
+``` 
+
+This is required because the jvm runs as a normal Windows exe and uses
+Windows style paths rather than Cygwin unix style paths.
 
 ## How it Works
 
