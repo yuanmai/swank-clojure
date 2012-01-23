@@ -5,7 +5,8 @@
         (swank.util.concurrent thread)
         (swank.core connection hooks threadmap debugger-backends))
   (:require (swank.util.concurrent [mbox :as mb])
-            (clj-stacktrace core repl)))
+            (clj-stacktrace core repl))
+  (:import (java.io BufferedReader)))
 
 ;; Protocol version
 (defonce protocol-version (atom "20100404"))
@@ -436,10 +437,18 @@ values."
 (defn read-line-from-emacs []
   (send-slime-command-to-emacs-and-wait :read-string))
 
+(defn read-from-emacs-minibuffer [prompt & [initial-value]]
+  (send-slime-command-to-emacs-and-wait :read-from-minibuffer prompt initial-value))
+
 (defmacro with-read-line-support
-  "Rebind `read-line` to work within slime."
+  "Rebind *in* to a proxy that dispatches .readLine to Emacs,
+   so `(read-line)` will work within slime sessions.
+
+   Note, .read / (read), etc will not work."
   [& body]
-  `(binding [read-line read-line-from-emacs]
+  `(binding [*in* (proxy [BufferedReader] [*in*]
+                    (readLine []
+                      (swank.core/read-line-from-emacs)))]
      ~@body))
 
 ;; Handle control
