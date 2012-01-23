@@ -216,7 +216,7 @@ your config:
 ```
 ## Cygwin
 
-If you are running Emacs from Cygwin you'll need to add the following to your 
+If you are running Emacs from Cygwin, you'll need to add the following to your 
 .emacs.d/init.el file:
 
 ```lisp
