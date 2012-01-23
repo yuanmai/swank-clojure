@@ -383,6 +383,29 @@ that symbols accessible in the current namespace go first."
     (let [fname (str (:ns (meta f-var)) "/" (:name (meta f-var)))]
       (swank-toggle-trace fname))))
 
+;;; Profiling
+;; stubs
+(defslimefn toggle-profile-fdefinition
+  [fname]
+  "`toggle-profile-fdefinition` is *not* implemented")
+
+(defslimefn unprofile-all
+  [] "`unprofile-all` is *not* implemented")
+
+(defslimefn profile-report
+  [] "`profile-report` is *not* implemented")
+
+(defslimefn profile-reset
+  [] "`profile-reset` is *not* implemented")
+(defslimefn profiled-functions
+  [] "`profiled-functions` is *not* implemented")
+
+(defslimefn profile-package
+  [package callers? methods?] "`profiled-package` is *not* implemented")
+
+(defslimefn profile-by-substring
+  [substring & [package]] "`profiled-by` is *not* implemented")
+
 ;;;; Source Locations
 (comment
   "Sets the default directory (java's user.dir). Note, however, that
