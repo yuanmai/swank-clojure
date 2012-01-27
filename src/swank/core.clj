@@ -6,6 +6,8 @@
         (swank.core connection hooks threadmap debugger-backends))
   (:require (swank.util.concurrent [mbox :as mb])
             (clj-stacktrace core repl))
+  (:use [swank.util.clj-stacktrace-compat
+         :only [pst-elem-str find-source-width]])
   (:import (java.io BufferedReader)))
 
 ;; Protocol version
@@ -127,11 +129,11 @@ values."
   (some #(identical? debug-invalid-restart-exception %) (exception-causes t)))
 
 (defn exception-str [width elem]
-  (clj-stacktrace.repl/pst-elem-str
+  (pst-elem-str
    @color-support? (clj-stacktrace.core/parse-trace-elem elem) width))
 
 (defmethod exception-stacktrace :default [t]
-  (let [width (clj-stacktrace.repl/find-source-width
+  (let [width (find-source-width
                (clj-stacktrace.core/parse-exception t))]
     (map #(list %1 %2 '(:restartable nil))
          (iterate inc 0)
