@@ -12,7 +12,7 @@ using [Leiningen](http://github.com/technomancy/leiningen):
 * Install `clojure-mode` either from
   [Marmalade](http://marmalade-repo.org) or from
   [git](http://github.com/technomancy/clojure-mode).
-* `lein plugin install swank-clojure 1.3.4`
+* `lein plugin install swank-clojure 1.4.0`
 * From an Emacs buffer inside a project, invoke `M-x clojure-jack-in`
 
 That's all it takes; there are no extra install steps beyond
@@ -58,7 +58,7 @@ If you just want a standalone swank server with no third-party
 libraries, you can use the shell wrapper that Leiningen installs for
 you:
 
-    $ lein plugin install swank-clojure 1.3.4
+    $ lein plugin install swank-clojure 1.4.0
     $ ~/.lein/bin/swank-clojure
 
     M-x slime-connect
@@ -179,7 +179,7 @@ this problem. Judicious use of `:exclusions` make it work:
 ```
 
 Since swank-clojure 1.3.4, having versions of clj-stacktrace older
-than 0.2.4 in your project or user-level plugins will cause `Unable to
+than 0.2.1 in your project or user-level plugins will cause `Unable to
 resolve symbol: pst-elem-str` errors. Keep in mind that user-level
 plugins in `~/.lein/plugins` are uberjars in Leiningen 1.x, so it's
 possible that one of your plugins (such as `lein-difftest` before
@@ -289,7 +289,7 @@ either.
 
 ## License
 
-Copyright © 2008-2011 Jeffrey Chu, Phil Hagelberg, Hugo Duncan, and
+Copyright © 2008-2012 Jeffrey Chu, Phil Hagelberg, Hugo Duncan, and
 contributors
 
 Licensed under the EPL. (See the file COPYING.)
