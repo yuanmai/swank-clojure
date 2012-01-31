@@ -1,7 +1,6 @@
 (ns leiningen.swank
   "Launch swank server for Emacs to connect."
-  (:require [clojure.java.io :as io])
-  (:use [leiningen.compile :only [eval-in-project]]))
+  (:require [clojure.java.io :as io]))
 
 (defn swank-form [project port host opts]
   ;; bootclasspath workaround: http://dev.clojure.org/jira/browse/CLJ-673
@@ -42,10 +41,21 @@
           add-cdt-jvm-opts))
     project))
 
+(defn eval-in-project
+  "Support eval-in-project in both Leiningen 1.x and 2.x."
+  [& args]
+  (let [eip (try (require 'leiningen.compile)
+                 (resolve 'leiningen.compile/eval-in-project)
+                 (catch java.io.FileNotFoundException _
+                   (require 'leiningen.core.eval)
+                   (resolve 'leiningen.core.eval/eval-in-project)))]
+    (apply eip args)))
+
 (defn swank
   "Launch swank server for Emacs to connect. Optionally takes PORT and HOST."
   ([project port host & opts]
-     (eval-in-project (add-cdt-project-args project)
+     (eval-in-project (update-in (add-cdt-project-args project)
+                                 [:dependencies] conj ['swank-clojure "1.4.0"])
                       (swank-form project port host opts)))
   ([project port] (swank project port "localhost"))
   ([project] (swank project 4005)))
