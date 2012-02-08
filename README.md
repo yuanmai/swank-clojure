@@ -214,6 +214,14 @@ your config:
 ```lisp
 (setenv "PATH" (shell-command-to-string "echo $PATH"))
 ```
+
+When using `clojure-jack-in`, standard out for the Leiningen process
+appears in the `*swank*` buffer, but the `*out*` var gets rebound to a
+writer that is able to redirect to the `*slime-repl*` buffer. So in
+general most Clojure output will show up in your repl buffer just
+fine, but for output coming from Java libraries you may need to check
+the `*swank*` buffer.
+
 ## Cygwin
 
 If you are running Emacs from Cygwin, you'll need to add the following to your 
