@@ -2,6 +2,11 @@
   "Launch swank server for Emacs to connect."
   (:require [clojure.java.io :as io]))
 
+(defn opts-list [port host opts]
+  (apply concat (merge {:host host :port (Integer. port)
+                        :repl-out-root true :block true}
+                       (apply hash-map (map read-string opts)))))
+
 (defn swank-form [project port host opts]
   ;; bootclasspath workaround: http://dev.clojure.org/jira/browse/CLJ-673
   (when (:eval-in-leiningen project)
@@ -15,9 +20,7 @@
      (require '~'swank.swank)
      (require '~'swank.commands.basic)
      (@(ns-resolve '~'swank.swank '~'start-server)
-      ~@(concat (map read-string opts)
-                [:host host :port (Integer. port)
-                 :repl-out-root true :block true]))))
+      ~@(opts-list port host opts))))
 
 (def ^{:private true} jvm-opts
   "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n")
@@ -28,7 +31,7 @@
     project
     (update-in project [:jvm-opts] conj jvm-opts)))
 
-(defn- add-cdt-project-args
+(defn add-cdt-project-args
   "CDT requires the JDK's tools.jar and sa-jdi.jar. Add them to the classpath."
   [project]
   (if (:swank-cdt project true)
