@@ -11,7 +11,7 @@
          (System/getProperty "pid")))
   {:tag String})
 
-(defn cmd [p]
+(defn #^java.lang.Process cmd [p]
   (.. Runtime getRuntime (exec (str p))))
 
 (defn cmdout [o]
