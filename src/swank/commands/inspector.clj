@@ -135,7 +135,6 @@
   (concat
    (label-value-line*
     ("Class" (class obj)))
-   (inspect-meta-information obj)
    (list (str "Value: " (pr-str obj)))))
 
 (defmethod emacs-inspect :seq [obj]
