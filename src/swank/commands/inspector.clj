@@ -24,6 +24,17 @@
    (ref-set inspector-stack nil)
    (ref-set inspector-history [])))
 
+(defn indexed-values [obj]
+  (apply concat
+         (map-indexed (fn [idx val]
+                        `(~(str "  " idx ". ") (:value ~val) (:newline)))
+                      obj)))
+
+(defn named-values [obj]
+  (apply concat
+         (for [[key val] obj]
+           `("  " (:value ~key) " = " (:value ~val) (:newline)))))
+
 (defn inspectee-title [obj]
   (cond
    (instance? clojure.lang.LazySeq obj) (str "clojure.lang.LazySeq@...")
@@ -83,9 +94,7 @@
   (when (seq (meta obj))
     (concat
      '("Meta Information: " (:newline))
-     (mapcat (fn [[key val]]
-               `("  " (:value ~key) " = " (:value ~val) (:newline)))
-             (meta obj)))))
+     (named-values (meta obj)))))
 
 (defmethod emacs-inspect :map [obj]
   (concat
@@ -94,10 +103,7 @@
     ("Count" (count obj)))
    (inspect-meta-information obj)
    '("Contents: " (:newline))
-   (mapcat (fn [[key val]]
-             `("  " (:value ~key) " = " (:value ~val)
-               (:newline)))
-           obj)))
+   (named-values obj)))
 
 (defmethod emacs-inspect :vector [obj]
   (concat
@@ -106,10 +112,7 @@
     ("Count" (count obj)))
    (inspect-meta-information obj)
    '("Contents: " (:newline))
-   (mapcat (fn [i val]
-             `(~(str "  " i ". ") (:value ~val) (:newline)))
-           (iterate inc 0)
-           obj)))
+   (indexed-values obj)))
 
 (defmethod emacs-inspect :array [#^"[Ljava.lang.Object;" obj]
   (concat
@@ -118,10 +121,7 @@
     ("Count" (alength obj))
     ("Component Type" (.getComponentType (class obj))))
    '("Contents: " (:newline))
-   (mapcat (fn [i val]
-	     `(~(str "  " i ". ") (:value ~val) (:newline)))
-	   (iterate inc 0)
-	   obj)))
+   (indexed-values obj)))
 
 (defmethod emacs-inspect :var [#^clojure.lang.Var obj]
   (concat
@@ -143,10 +143,8 @@
     ("Class" (class obj)))
    (inspect-meta-information obj)
    '("Contents: " (:newline))
-   (mapcat (fn [i val]
-             `(~(str "   " i ". ") (:value ~val) (:newline)))
-           (iterate inc 0)
-           obj)))
+   (indexed-values obj)))
+
 
 (defmethod emacs-inspect :default [obj]
   (let [#^"[Ljava.lang.reflect.Field;" fields (. (class obj) getDeclaredFields)
@@ -165,7 +163,7 @@
        "Fields: " (:newline))
      (mapcat
       (fn [name val]
-	`(~(str "  " name ": ") (:value ~val) (:newline))) names vals))))
+        `(~(str "  " name ": ") (:value ~val) (:newline))) names vals))))
 
 (defn- inspect-class-section [obj section]
   (let [method (symbol (str ".get" (name section)))
