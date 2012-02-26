@@ -92,8 +92,8 @@
    (label-value-line*
     ("Class" (class obj))
     ("Count" (count obj)))
-   '("Contents: " (:newline))
    (inspect-meta-information obj)
+   '("Contents: " (:newline))
    (mapcat (fn [[key val]]
              `("  " (:value ~key) " = " (:value ~val)
                (:newline)))
@@ -104,8 +104,8 @@
    (label-value-line*
     ("Class" (class obj))
     ("Count" (count obj)))
-   '("Contents: " (:newline))
    (inspect-meta-information obj)
+   '("Contents: " (:newline))
    (mapcat (fn [i val]
              `(~(str "  " i ". ") (:value ~val) (:newline)))
            (iterate inc 0)
@@ -142,8 +142,8 @@
   (concat
    (label-value-line*
     ("Class" (class obj)))
-   '("Contents: " (:newline))
    (inspect-meta-information obj)
+   '("Contents: " (:newline))
    (mapcat (fn [i val]
              `(~(str "   " i ". ") (:value ~val) (:newline)))
            (iterate inc 0)
