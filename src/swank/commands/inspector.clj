@@ -80,7 +80,7 @@
      (.isArray (class obj)) :array)))
 
 (defn inspect-meta-information [obj]
-  (when (> (count (meta obj)) 0)
+  (when (seq (meta obj))
     (concat
      '("Meta Information: " (:newline))
      (mapcat (fn [[key val]]
