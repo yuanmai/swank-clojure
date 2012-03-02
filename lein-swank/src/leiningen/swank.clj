@@ -2,12 +2,15 @@
   "Launch swank server for Emacs to connect."
   (:require [clojure.java.io :as io]))
 
-(defn opts-list [port host opts]
-  (apply concat (merge {:host host :port (Integer. port)
-                        :repl-out-root true :block true}
-                       (apply hash-map (map read-string opts)))))
+(defn opts-list [project-opts port host cli-opts]
+  (apply concat (merge {:repl-out-root true :block true
+                        :host "localhost" :port 4005}
+                       project-opts
+                       (apply hash-map (map read-string cli-opts))
+                       (if host {:host host})
+                       (if port {:port port}))))
 
-(defn swank-form [project port host opts]
+(defn swank-form [project port host cli-opts]
   ;; bootclasspath workaround: http://dev.clojure.org/jira/browse/CLJ-673
   (when (:eval-in-leiningen project)
     (require '[clojure walk template stacktrace]))
@@ -20,7 +23,7 @@
      (require '~'swank.swank)
      (require '~'swank.commands.basic)
      (@(ns-resolve '~'swank.swank '~'start-server)
-      ~@(opts-list port host opts))))
+      ~@(opts-list (:swank-options project) port host cli-opts))))
 
 (def ^{:private true} jvm-opts
   "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n")
@@ -65,5 +68,5 @@
      (eval-in-project (update-in (add-cdt-project-args project)
                                  [:dependencies] conj ['swank-clojure "1.4.0"])
                       (swank-form project port host opts)))
-  ([project port] (swank project port "localhost"))
-  ([project] (swank project 4005)))
+  ([project port] (swank project port nil))
+  ([project] (swank project nil)))
