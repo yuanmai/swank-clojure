@@ -82,7 +82,7 @@
       (reset! shutting-down? true)
       (doseq [c @connections]
         (doseq [t [:control-thread :read-thread :repl-thread]]
-          (when-let [thread @(c t)]
+          (when-let [^Thread thread @(c t)]
             (.interrupt thread))))
       (close-server-socket! @current-server)
       (dosync (ref-set connections []))
