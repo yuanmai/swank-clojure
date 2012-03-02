@@ -46,18 +46,22 @@
 
 (defn eval-in-project
   "Support eval-in-project in both Leiningen 1.x and 2.x."
-  [& args]
-  (let [eip (or (try (require 'leiningen.core.eval)
-                     (resolve 'leiningen.core.eval/eval-in-project)
-                     (catch java.io.FileNotFoundException _))
-                (try (require 'leiningen.compile)
-                     (resolve 'leiningen.compile/eval-in-project)
-                     (catch java.io.FileNotFoundException _)))]
-    (apply eip args)))
+  [project form init]
+  (let [[eip two?] (or (try (require 'leiningen.core.eval)
+                            [(resolve 'leiningen.core.eval/eval-in-project)
+                             true]
+                            (catch java.io.FileNotFoundException _))
+                       (try (require 'leiningen.compile)
+                            [(resolve 'leiningen.compile/eval-in-project)]
+                            (catch java.io.FileNotFoundException _)))]
+    (if two?
+      (eip project form init)
+      (eip project form nil nil init))))
 
 (defn swank
   "Launch swank server for Emacs to connect. Optionally takes PORT and HOST."
   ([project port host & opts]
+     ;; TODO: only add the dependency if it's not already present
      (eval-in-project (update-in (add-cdt-project-args project)
                                  [:dependencies] conj ['swank-clojure "1.4.0"])
                       (swank-form project port host opts)))
