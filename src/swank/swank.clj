@@ -62,6 +62,7 @@
       (reset! shutting-down? false)
       (let [opts (apply hash-map opts)]
         (reset! color-support? (:colors? opts false))
+        (reset! exit-on-quit? (:exit-on-quit opts true))
         (when (:load-cdt-on-startup opts)
           (load-cdt-with-dynamic-classloader))
         (reset! current-server
