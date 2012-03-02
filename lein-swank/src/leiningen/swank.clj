@@ -15,15 +15,10 @@
   (when (:eval-in-leiningen project)
     (require '[clojure walk template stacktrace]))
   `(do
-     (when-let [is# ~(:repl-init-script project)]
-       (when (.exists (java.io.File. (str is#)))
-         (load-file is#)))
      (when-let [repl-init# '~(:repl-init project)]
-       (doto repl-init# require in-ns))
-     (require '~'swank.swank)
-     (require '~'swank.commands.basic)
-     (@(ns-resolve '~'swank.swank '~'start-server)
-      ~@(opts-list (:swank-options project) port host cli-opts))))
+       (require repl-init#))
+     (swank.swank/start-server ~@(opts-list (:swank-options project)
+                                            port host cli-opts))))
 
 (def ^{:private true} jvm-opts
   "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n")
@@ -67,6 +62,7 @@
      ;; TODO: only add the dependency if it's not already present
      (eval-in-project (update-in (add-cdt-project-args project)
                                  [:dependencies] conj ['swank-clojure "1.4.0"])
-                      (swank-form project port host opts)))
+                      (swank-form project port host opts)
+                      '(require 'swank.swank)))
   ([project port] (swank project port nil))
   ([project] (swank project nil)))
