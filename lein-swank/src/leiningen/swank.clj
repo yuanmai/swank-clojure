@@ -8,7 +8,7 @@
                        project-opts
                        (apply hash-map (map read-string cli-opts))
                        (if host {:host host})
-                       (if port {:port port}))))
+                       (if port {:port (Integer. port)}))))
 
 (defn swank-form [project port host cli-opts]
   ;; bootclasspath workaround: http://dev.clojure.org/jira/browse/CLJ-673
