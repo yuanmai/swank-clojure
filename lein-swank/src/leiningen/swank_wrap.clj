@@ -13,4 +13,4 @@ ALPHA: subject to change."
                          `(do ~(swank/swank-form project port "localhost"
                                                  [":block" "false"])
                               ~((resolve 'leiningen.run/run-form) main args))
-                        `(require '~(symbol main))))
+                         `(require '~(symbol main) '~'swank.swank)))
