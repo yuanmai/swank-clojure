@@ -7,9 +7,9 @@
 
 ALPHA: subject to change."
   [project port main & args]
-  (swank/eval-in-project (update-in (swank/add-cdt-project-args project)
-                                    [:dependencies] conj
-                                    ['swank-clojure "1.4.0"])
+  (swank/eval-in-project (-> project
+                             (swank/add-cdt-project-args)
+                             (swank/add-swank-dep))
                          `(do ~(swank/swank-form project port "localhost"
                                                  [":block" "false"])
                               ~((resolve 'leiningen.run/run-form) main args))

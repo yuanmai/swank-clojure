@@ -56,12 +56,18 @@
       (eip project form init)
       (eip project form nil nil init))))
 
+(defn add-swank-dep [project]
+  (if (some #(= 'swank-clojure (first %)) (:dependencies project))
+    project
+    (update-in project [:dependencies] conj ['swank-clojure "1.4.0"])))
+
 (defn swank
   "Launch swank server for Emacs to connect. Optionally takes PORT and HOST."
   ([project port host & opts]
      ;; TODO: only add the dependency if it's not already present
-     (eval-in-project (update-in (add-cdt-project-args project)
-                                 [:dependencies] conj ['swank-clojure "1.4.0"])
+     (eval-in-project (-> project
+                          (add-cdt-project-args)
+                          (add-swank-dep))
                       (swank-form project port host opts)
                       '(require 'swank.swank)))
   ([project port] (swank project port nil))
