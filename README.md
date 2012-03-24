@@ -156,6 +156,7 @@ To get syntax highlighting in your repl buffer, use this elisp:
 ```lisp
 (add-hook 'slime-repl-mode-hook
           (defun clojure-mode-slime-font-lock ()
+            (require 'clojure-mode)
             (let (font-lock-mode)
               (clojure-mode-font-lock-setup))))
 ```
