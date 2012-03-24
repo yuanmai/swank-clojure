@@ -12,12 +12,12 @@ using [Leiningen](http://github.com/technomancy/leiningen):
 * Install `clojure-mode` either from
   [Marmalade](http://marmalade-repo.org) or from
   [git](http://github.com/technomancy/clojure-mode).
-* Add `[lein-swank "1.4.3"]` to the `:plugins` section of either
+* Add `[lein-swank "1.4.4"]` to the `:plugins` section of either
   `project.clj` or your user profile.
 * From an Emacs buffer inside a project, invoke `M-x clojure-jack-in`
 
 If you are still using Leiningen 1.6.2 or earlier, you will need to do
-`lein plugin install swank-clojure 1.4.0` instead.
+`lein plugin install swank-clojure 1.4.1` instead.
 
 That's all it takes; there are no extra install steps beyond
 `clojure-mode` on the Emacs side and the `swank-clojure` plugin on the
