@@ -12,7 +12,7 @@ using [Leiningen](http://github.com/technomancy/leiningen):
 * Install `clojure-mode` either from
   [Marmalade](http://marmalade-repo.org) or from
   [git](http://github.com/technomancy/clojure-mode).
-* `lein plugin install swank-clojure 1.4.0`
+* `lein plugin install swank-clojure 1.4.1`
 * From an Emacs buffer inside a project, invoke `M-x clojure-jack-in`
 
 That's all it takes; there are no extra install steps beyond
@@ -58,7 +58,7 @@ If you just want a standalone swank server with no third-party
 libraries, you can use the shell wrapper that Leiningen installs for
 you:
 
-    $ lein plugin install swank-clojure 1.4.0
+    $ lein plugin install swank-clojure 1.4.1
     $ ~/.lein/bin/swank-clojure
 
     M-x slime-connect
